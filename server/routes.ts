@@ -16,19 +16,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
 
-  // Image upload endpoint
+  // Image upload endpoint using object storage
   app.post('/api/upload-image', isAuthenticated, upload.single('image'), async (req: any, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No image file provided" });
       }
 
-      // TODO: Implement image upload to Cloudinary or Object Storage
-      const imageUrl = `https://images.unsplash.com/photo-${Date.now()}-temp.jpg`;
+      // Generate unique filename
+      const timestamp = Date.now();
+      const fileExtension = req.file.originalname.split('.').pop() || 'jpg';
+      const filename = `uploads/${req.user.id}/${timestamp}.${fileExtension}`;
+      
+      // Upload to object storage private directory
+      const fs = require('fs').promises;
+      const path = require('path');
+      
+      // Create the directory path
+      const privateDir = process.env.PRIVATE_OBJECT_DIR || '/tmp';
+      const uploadPath = path.join(privateDir, filename);
+      const uploadDir = path.dirname(uploadPath);
+      
+      await fs.mkdir(uploadDir, { recursive: true });
+      await fs.writeFile(uploadPath, req.file.buffer);
+      
+      // Return the accessible URL for the uploaded file
+      const imageUrl = `/api/files/${filename}`;
+      
       res.json({ url: imageUrl });
     } catch (error) {
       console.error("Error uploading image:", error);
       res.status(500).json({ message: "Failed to upload image" });
+    }
+  });
+
+  // File serving endpoint
+  app.get('/api/files/*', (req: any, res) => {
+    try {
+      const filename = req.params['0'] as string;
+      const fs = require('fs');
+      const path = require('path');
+      
+      const privateDir = process.env.PRIVATE_OBJECT_DIR || '/tmp';
+      const filePath = path.join(privateDir, filename);
+      
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      
+      // Set appropriate headers
+      res.setHeader('Content-Type', 'image/jpeg');
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
+      
+      // Stream the file
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+    } catch (error) {
+      console.error("Error serving file:", error);
+      res.status(500).json({ message: "Failed to serve file" });
     }
   });
 
@@ -68,8 +113,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "pending"
       });
 
-      // TODO: Start CGI generation process asynchronously
-      // processProject(project.id).catch(console.error);
+      // Deduct credits from user account
+      await storage.updateUserCredits(userId, user.credits - creditsNeeded);
+
+      // Start CGI generation process asynchronously
+      processProject(project.id).catch(console.error);
 
       res.json(project);
     } catch (error) {
@@ -101,19 +149,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/purchase-credits', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const transactionData = insertTransactionSchema.parse(req.body);
+      const { amount, credits } = req.body;
       
-      // TODO: Implement Stripe payment processing
-      // For now, just create a pending transaction
-      const transaction = await storage.createTransaction({
-        ...transactionData,
-        userId
+      if (!amount || !credits) {
+        return res.status(400).json({ message: "Missing amount or credits" });
+      }
+
+      // Create Stripe payment intent
+      const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+      
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount * 100), // Convert to cents
+        currency: 'usd',
+        metadata: {
+          userId,
+          credits: credits.toString(),
+        },
       });
 
-      res.json(transaction);
+      // Create transaction record
+      const transaction = await storage.createTransaction({
+        userId,
+        amount,
+        credits,
+      });
+
+      res.json({
+        clientSecret: paymentIntent.client_secret,
+        transactionId: transaction.id,
+      });
     } catch (error) {
-      console.error("Error creating transaction:", error);
-      res.status(500).json({ message: "Failed to create transaction" });
+      console.error("Error creating payment:", error);
+      res.status(500).json({ message: "Failed to create payment" });
+    }
+  });
+
+  // Stripe webhook handler
+  app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    
+    try {
+      const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+      
+      if (event.type === 'payment_intent.succeeded') {
+        const paymentIntent = event.data.object;
+        const { userId, credits } = paymentIntent.metadata;
+        
+        // Update user credits
+        const user = await storage.getUser(userId);
+        if (user) {
+          await storage.updateUserCredits(userId, user.credits + parseInt(credits));
+        }
+      }
+      
+      res.json({ received: true });
+    } catch (error) {
+      console.error('Webhook error:', error);
+      res.status(400).send(`Webhook Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   });
 
@@ -145,8 +238,13 @@ async function processProject(projectId: string) {
       progress: 25 
     });
 
-    // TODO: Integrate with Gemini AI for prompt enhancement
-    const enhancedPrompt = project.description || "CGI image generation"
+    // Integrate with Gemini AI for prompt enhancement
+    const { enhancePromptWithGemini } = require('./services/gemini');
+    const enhancedPrompt = await enhancePromptWithGemini(
+      project.productImageUrl,
+      project.sceneImageUrl,
+      project.description || "CGI image generation"
+    );
 
     await storage.updateProject(projectId, { 
       enhancedPrompt,
@@ -159,8 +257,13 @@ async function processProject(projectId: string) {
       progress: 60 
     });
 
-    // TODO: Integrate with Fal.ai for image generation
-    const imageResult = { url: "https://placeholder.com/image.jpg" };
+    // Integrate with Fal.ai for image generation
+    const { generateImageWithFal } = require('./services/falai');
+    const imageResult = await generateImageWithFal(
+      enhancedPrompt,
+      project.sceneImageUrl,
+      project.resolution
+    );
 
     await storage.updateProject(projectId, { 
       outputImageUrl: imageResult.url,
@@ -174,8 +277,9 @@ async function processProject(projectId: string) {
         progress: 80 
       });
 
-      // TODO: Integrate with PiAPI/Kling for video generation
-      const videoResult = { url: "https://placeholder.com/video.mp4" };
+      // Integrate with PiAPI/Kling for video generation
+      const { generateVideoWithPiAPI } = require('./services/piapi');
+      const videoResult = await generateVideoWithPiAPI(imageResult.url);
 
       await storage.updateProject(projectId, { 
         outputVideoUrl: videoResult.url,

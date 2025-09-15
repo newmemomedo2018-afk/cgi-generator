@@ -9,7 +9,7 @@ export async function generateVideoWithPiAPI(imageUrl: string): Promise<PiAPIVid
     const response = await fetch("https://api.piapi.ai/api/kling/v1/videos/generations", {
       method: "POST",
       headers: {
-        "X-API-Key": process.env.PIAPI_API_KEY || process.env.FAL_API_KEY || "2fd637d9-6952-44a0-a5c2-1ab874fd3fa9:8924390041c47891bb58f6260270ad6e",
+        "X-API-Key": process.env.PIAPI_API_KEY || "",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -39,7 +39,7 @@ export async function generateVideoWithPiAPI(imageUrl: string): Promise<PiAPIVid
       
       const statusResponse = await fetch(`https://api.piapi.ai/api/kling/v1/videos/generations/${jobId}`, {
         headers: {
-          "X-API-Key": process.env.PIAPI_API_KEY || process.env.FAL_API_KEY || "2fd637d9-6952-44a0-a5c2-1ab874fd3fa9:8924390041c47891bb58f6260270ad6e",
+          "X-API-Key": process.env.PIAPI_API_KEY || "",
         },
       });
 

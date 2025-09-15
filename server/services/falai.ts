@@ -10,12 +10,15 @@ export async function generateImageWithFal(
   resolution: string = "1024x1024"
 ): Promise<FalImageResult> {
   try {
+    if (!process.env.FAL_API_KEY) {
+      throw new Error("FAL_API_KEY is not configured");
+    }
     const [width, height] = resolution.split('x').map(Number);
     
     const response = await fetch("https://fal.run/fal-ai/flux/schnell", {
       method: "POST",
       headers: {
-        "Authorization": `Key ${process.env.FAL_API_KEY || "2fd637d9-6952-44a0-a5c2-1ab874fd3fa9:8924390041c47891bb58f6260270ad6e"}`,
+        "Authorization": `Key ${process.env.FAL_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({

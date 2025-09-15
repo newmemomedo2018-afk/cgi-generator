@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(
-  process.env.GEMINI_API_KEY || "AIzaSyDL1FDQJy63SjCC4sP87kvQ6B-ht_enl-8"
+  process.env.GEMINI_API_KEY || ""
 );
 
 export async function enhancePromptWithGemini(
