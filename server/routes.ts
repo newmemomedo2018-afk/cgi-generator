@@ -185,7 +185,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Stripe webhook handler
-  app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+  app.post('/api/webhooks/stripe', (req, res, next) => {
+    if (req.headers['content-type'] === 'application/json') {
+      req.body = req.body;
+    }
+    next();
+  }, async (req, res) => {
     const sig = req.headers['stripe-signature'];
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     
