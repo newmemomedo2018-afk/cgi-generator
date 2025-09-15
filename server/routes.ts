@@ -6,7 +6,7 @@ import { setupAuth, isAuthenticated } from "./auth";
 import { insertProjectSchema, insertTransactionSchema } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
-import { promises as fs } from 'fs';
+import { promises as fs, createReadStream, existsSync } from 'fs';
 import path from 'path';
 
 const upload = multer({ 
@@ -32,8 +32,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const filename = `uploads/${req.user.id}/${timestamp}.${fileExtension}`;
       
       // Upload to object storage private directory
-      const fs = require('fs').promises;
-      const path = require('path');
+      // Using imported fs and path modules
       
       // Create the directory path
       const privateDir = process.env.PRIVATE_OBJECT_DIR || '/tmp';
@@ -57,8 +56,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/files/*', isAuthenticated, async (req: any, res) => {
     try {
       const filename = req.params['0'] as string;
-      const fs = require('fs');
-      const path = require('path');
+      // Using imported fs and path modules
       
       // SECURITY: Validate and sanitize the file path to prevent path traversal
       if (!filename || filename.includes('..') || filename.includes('\0') || path.isAbsolute(filename)) {
@@ -84,7 +82,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied - not your file" });
       }
       
-      if (!fs.existsSync(filePath)) {
+      if (!existsSync(filePath)) {
         return res.status(404).json({ message: "File not found" });
       }
       
@@ -108,7 +106,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Cache-Control', 'private, max-age=3600'); // Private cache for user files
       
       // Stream the file
-      const fileStream = fs.createReadStream(filePath);
+      const fileStream = createReadStream(filePath);
       fileStream.pipe(res);
     } catch (error) {
       console.error("Error serving file:", error);
