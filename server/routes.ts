@@ -34,8 +34,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Upload to object storage private directory
       // Using imported fs and path modules
       
-      // Create the directory path
-      const privateDir = process.env.PRIVATE_OBJECT_DIR || '/tmp';
+      // Create the directory path - use tmp for reliable storage
+      const privateDir = '/tmp';
       const uploadPath = path.join(privateDir, filename);
       const uploadDir = path.dirname(uploadPath);
       
@@ -63,7 +63,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid file path" });
       }
       
-      const privateDir = process.env.PRIVATE_OBJECT_DIR || '/tmp';
+      const privateDir = '/tmp';
       const filePath = path.resolve(path.join(privateDir, filename));
       
       // SECURITY: Ensure the resolved path is still within the private directory
