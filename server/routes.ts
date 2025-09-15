@@ -295,6 +295,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint to make yourself admin (for development/testing)
+  app.post('/api/admin/make-admin', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      
+      // Update user to be admin
+      await storage.updateUser(userId, { isAdmin: true });
+      
+      res.json({ message: "Admin privileges granted", isAdmin: true });
+    } catch (error) {
+      console.error("Error granting admin:", error);
+      res.status(500).json({ message: "Failed to grant admin privileges" });
+    }
+  });
+
+  // Admin endpoint to get all users
+  app.get('/api/admin/users', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error getting users:", error);
+      res.status(500).json({ message: "Failed to get users" });
+    }
+  });
+
+  // Admin endpoint to get all projects
+  app.get('/api/admin/projects', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const projects = await storage.getAllProjects();
+      res.json(projects);
+    } catch (error) {
+      console.error("Error getting projects:", error);
+      res.status(500).json({ message: "Failed to get projects" });
+    }
+  });
+
+  // Admin endpoint to get platform stats
+  app.get('/api/admin/stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const stats = await storage.getPlatformStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error getting stats:", error);
+      res.status(500).json({ message: "Failed to get platform stats" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

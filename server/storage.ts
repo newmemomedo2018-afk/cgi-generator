@@ -10,7 +10,7 @@ import {
   type InsertTransaction,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, count, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (for JWT Auth)
@@ -18,6 +18,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: { email: string; password: string; firstName?: string; lastName?: string; credits?: number }): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
+  updateUser(id: string, updates: Partial<User>): Promise<void>;
   updateUserCredits(id: string, credits: number): Promise<void>;
   
   // Project operations
@@ -29,6 +30,11 @@ export interface IStorage {
   // Transaction operations
   createTransaction(transaction: Omit<InsertTransaction, "id"> & { userId: string }): Promise<Transaction>;
   getUserTransactions(userId: string): Promise<Transaction[]>;
+  
+  // Admin operations
+  getAllUsers(): Promise<User[]>;
+  getAllProjects(): Promise<Project[]>;
+  getPlatformStats(): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -70,6 +76,13 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return user;
+  }
+
+  async updateUser(id: string, updates: Partial<User>): Promise<void> {
+    await db
+      .update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, id));
   }
 
   async updateUserCredits(id: string, credits: number): Promise<void> {
@@ -126,6 +139,39 @@ export class DatabaseStorage implements IStorage {
       .from(transactions)
       .where(eq(transactions.userId, userId))
       .orderBy(desc(transactions.createdAt));
+  }
+
+  // Admin operations
+  async getAllUsers(): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .orderBy(desc(users.createdAt));
+  }
+
+  async getAllProjects(): Promise<Project[]> {
+    return await db
+      .select()
+      .from(projects)
+      .orderBy(desc(projects.createdAt));
+  }
+
+  async getPlatformStats(): Promise<any> {
+    const [userCount] = await db.select({ count: count() }).from(users);
+    const [projectCount] = await db.select({ count: count() }).from(projects);
+    const [transactionCount] = await db.select({ count: count() }).from(transactions);
+    
+    const [completedProjects] = await db
+      .select({ count: count() })
+      .from(projects)
+      .where(eq(projects.status, 'completed'));
+    
+    return {
+      totalUsers: userCount?.count || 0,
+      totalProjects: projectCount?.count || 0,
+      completedProjects: completedProjects?.count || 0,
+      totalTransactions: transactionCount?.count || 0,
+    };
   }
 }
 

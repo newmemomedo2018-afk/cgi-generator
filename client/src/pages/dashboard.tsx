@@ -49,7 +49,7 @@ export default function Dashboard() {
     if (!projects) return;
     
     const hasProcessingProjects = projects.some((project: Project) => 
-      ["pending", "processing", "enhancing_prompt", "generating_image", "generating_video"].includes(project.status)
+      project.status && ["pending", "processing", "enhancing_prompt", "generating_image", "generating_video"].includes(project.status)
     );
     
     if (hasProcessingProjects) {
@@ -237,6 +237,15 @@ export default function Dashboard() {
                 <Coins className="ml-2 h-4 w-4" />
                 <span data-testid="user-credits">{userData?.credits || 0}</span> كريدت
               </Badge>
+              <Button 
+                onClick={() => window.location.href = "/admin"}
+                variant="outline" 
+                className="glass-card text-yellow-400 border-yellow-400/30 hover:bg-yellow-400/10" 
+                data-testid="admin-button"
+              >
+                <Wand2 className="ml-2 h-4 w-4" />
+                لوحة الأدمن
+              </Button>
               <Button onClick={handleLogout} variant="outline" className="glass-card" data-testid="logout-button">
                 <User className="ml-2 h-4 w-4" />
                 تسجيل الخروج
