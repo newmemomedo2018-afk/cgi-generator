@@ -1,10 +1,13 @@
 import type { Express } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./auth";
 import { insertProjectSchema, insertTransactionSchema } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
+import { promises as fs } from 'fs';
+import path from 'path';
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -50,23 +53,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // File serving endpoint
-  app.get('/api/files/*', (req: any, res) => {
+  // File serving endpoint - SECURED with authentication and path validation
+  app.get('/api/files/*', isAuthenticated, async (req: any, res) => {
     try {
       const filename = req.params['0'] as string;
       const fs = require('fs');
       const path = require('path');
       
+      // SECURITY: Validate and sanitize the file path to prevent path traversal
+      if (!filename || filename.includes('..') || filename.includes('\0') || path.isAbsolute(filename)) {
+        return res.status(400).json({ message: "Invalid file path" });
+      }
+      
       const privateDir = process.env.PRIVATE_OBJECT_DIR || '/tmp';
-      const filePath = path.join(privateDir, filename);
+      const filePath = path.resolve(path.join(privateDir, filename));
+      
+      // SECURITY: Ensure the resolved path is still within the private directory
+      if (!filePath.startsWith(path.resolve(privateDir))) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // SECURITY: Validate user ownership - extract user ID from file path
+      const pathParts = filename.split('/');
+      if (pathParts.length < 2 || pathParts[0] !== 'uploads') {
+        return res.status(403).json({ message: "Invalid file structure" });
+      }
+      
+      const fileOwnerUserId = pathParts[1];
+      if (fileOwnerUserId !== req.user.id) {
+        return res.status(403).json({ message: "Access denied - not your file" });
+      }
       
       if (!fs.existsSync(filePath)) {
         return res.status(404).json({ message: "File not found" });
       }
       
+      // SECURITY: Get proper MIME type based on file extension
+      const ext = path.extname(filename).toLowerCase();
+      const mimeTypes: { [key: string]: string } = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+        '.webp': 'image/webp',
+        '.mp4': 'video/mp4',
+        '.webm': 'video/webm',
+        '.mov': 'video/quicktime'
+      };
+      
+      const contentType = mimeTypes[ext] || 'application/octet-stream';
+      
       // Set appropriate headers
-      res.setHeader('Content-Type', 'image/jpeg');
-      res.setHeader('Cache-Control', 'public, max-age=31536000');
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', 'private, max-age=3600'); // Private cache for user files
       
       // Stream the file
       const fileStream = fs.createReadStream(filePath);
@@ -184,13 +223,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Stripe webhook handler
-  app.post('/api/webhooks/stripe', (req, res, next) => {
-    if (req.headers['content-type'] === 'application/json') {
-      req.body = req.body;
-    }
-    next();
-  }, async (req, res) => {
+  // Stripe webhook handler - SECURED with proper raw body parsing
+  app.post('/api/webhooks/stripe', express.raw({type: 'application/json'}), async (req, res) => {
     const sig = req.headers['stripe-signature'];
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     
@@ -212,6 +246,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Webhook error:', error);
       res.status(400).send(`Webhook Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  });
+
+  // Download endpoint for completed projects
+  app.get('/api/projects/:id/download', isAuthenticated, async (req: any, res) => {
+    try {
+      const projectId = req.params.id;
+      const userId = req.user.id;
+      
+      const project = await storage.getProject(projectId);
+      if (!project || project.userId !== userId) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      if (project.status !== "completed") {
+        return res.status(400).json({ message: "Project not completed" });
+      }
+      
+      const outputUrl = project.contentType === "video" ? project.outputVideoUrl : project.outputImageUrl;
+      if (!outputUrl) {
+        return res.status(404).json({ message: "Output file not found" });
+      }
+      
+      // If it's a local file, serve it directly
+      if (outputUrl.startsWith('/api/files/')) {
+        const filePath = outputUrl.replace('/api/files/', '');
+        const fullPath = path.join(process.env.PRIVATE_OBJECT_DIR || '/tmp', filePath);
+        
+        try {
+          const fileBuffer = await fs.readFile(fullPath);
+          const mimeType = project.contentType === "video" ? "video/mp4" : "image/png";
+          const fileName = `${project.title}_${project.id}.${project.contentType === "video" ? "mp4" : "png"}`;
+          
+          res.setHeader('Content-Type', mimeType);
+          res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+          res.send(fileBuffer);
+        } catch (error) {
+          return res.status(404).json({ message: "File not found" });
+        }
+      } else {
+        // For external URLs, redirect
+        res.redirect(outputUrl);
+      }
+    } catch (error) {
+      console.error("Error downloading project:", error);
+      res.status(500).json({ message: "Failed to download project" });
     }
   });
 

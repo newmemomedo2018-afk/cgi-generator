@@ -67,9 +67,8 @@ export default function ProjectCard({ project }: ProjectCardProps) {
   };
 
   const handleDownload = () => {
-    const url = project.contentType === "video" ? project.outputVideoUrl : project.outputImageUrl;
-    if (url) {
-      window.open(url, '_blank');
+    if (project.status === "completed") {
+      window.open(`/api/projects/${project.id}/download`, '_blank');
     }
   };
 

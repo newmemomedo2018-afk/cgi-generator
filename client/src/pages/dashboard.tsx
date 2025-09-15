@@ -44,6 +44,22 @@ export default function Dashboard() {
     retry: false,
   });
 
+  // Use separate useEffect for polling logic
+  useEffect(() => {
+    if (!projects) return;
+    
+    const hasProcessingProjects = projects.some((project: Project) => 
+      ["pending", "processing", "enhancing_prompt", "generating_image", "generating_video"].includes(project.status)
+    );
+    
+    if (hasProcessingProjects) {
+      const interval = setInterval(() => {
+        queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [projects, queryClient]);
+
   const uploadImageMutation = useMutation({
     mutationFn: async (file: File) => {
       const formData = new FormData();
