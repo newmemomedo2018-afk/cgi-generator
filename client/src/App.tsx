@@ -13,21 +13,17 @@ import NotFound from "@/pages/not-found";
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
+  // Show landing page for unauthenticated users on root path
+  const HomePage = () => {
+    return (isLoading || !isAuthenticated) ? <Landing /> : <Dashboard />;
+  };
+
   return (
     <Switch>
-      {isLoading || !isAuthenticated ? (
-        <>
-          <Route path="/" component={Landing} />
-          <Route path="/pricing" component={Pricing} />
-        </>
-      ) : (
-        <>
-          <Route path="/" component={Dashboard} />
-          <Route path="/dashboard" component={Dashboard} />
-          <Route path="/admin" component={AdminDashboard} />
-          <Route path="/pricing" component={Pricing} />
-        </>
-      )}
+      <Route path="/" component={HomePage} />
+      <Route path="/dashboard" component={Dashboard} />
+      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/pricing" component={Pricing} />
       <Route component={NotFound} />
     </Switch>
   );
