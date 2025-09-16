@@ -5,57 +5,78 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./auth";
 import { insertProjectSchema, insertTransactionSchema } from "@shared/schema";
 import { z } from "zod";
-import multer from "multer";
 import { promises as fs, createReadStream, existsSync } from 'fs';
 import path from 'path';
 import { enhancePromptWithGemini } from './services/gemini';
 import { generateImageWithFal } from './services/falai';
-import { Client } from '@replit/object-storage';
+import { ObjectStorageService, ObjectNotFoundError } from './objectStorage';
 
-const upload = multer({ 
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
-});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
 
-  // Image upload endpoint using object storage
-  app.post('/api/upload-image', isAuthenticated, upload.single('image'), async (req: any, res) => {
+  // Get upload URL endpoint - returns presigned URL for direct client upload
+  app.post('/api/get-upload-url', isAuthenticated, async (req: any, res) => {
     try {
-      if (!req.file) {
-        return res.status(400).json({ message: "No image file provided" });
+      const { fileType } = req.body;
+      
+      // Extract file extension from MIME type
+      const extensionMap: { [key: string]: string } = {
+        'image/jpeg': 'jpg',
+        'image/jpg': 'jpg', 
+        'image/png': 'png',
+        'image/gif': 'gif',
+        'image/webp': 'webp'
+      };
+      
+      const fileExtension = extensionMap[fileType] || 'jpg';
+      
+      const objectStorageService = new ObjectStorageService();
+      const { url, objectPath, relativePath } = await objectStorageService.getImageUploadURL(req.user.id, fileExtension);
+      
+      res.json({ 
+        uploadUrl: url,
+        objectPath: objectPath,
+        relativePath: relativePath
+      });
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ message: "Failed to get upload URL" });
+    }
+  });
+
+  // Confirm upload endpoint - called after successful client upload
+  app.post('/api/confirm-upload', isAuthenticated, async (req: any, res) => {
+    try {
+      const { objectPath, relativePath } = req.body;
+      
+      if (!objectPath || !relativePath) {
+        return res.status(400).json({ message: "Object path and relative path required" });
       }
 
-      // Generate unique filename
-      const timestamp = Date.now();
-      const fileExtension = req.file.originalname.split('.').pop() || 'jpg';
-      const filename = `public/uploads/${req.user.id}/${timestamp}.${fileExtension}`;
-      
-      // Upload to object storage using Replit client
-      const client = new Client();
-      const { ok: uploadOk, error: uploadError } = await client.uploadFromBytes(
-        filename,
-        req.file.buffer
-      );
-      
-      if (!uploadOk) {
-        console.error("Object storage upload failed:", uploadError);
-        throw new Error("Failed to upload to object storage");
+      // Verify the object exists in storage
+      const objectStorageService = new ObjectStorageService();
+      try {
+        await objectStorageService.getObjectFile(objectPath);
+      } catch (error) {
+        if (error instanceof ObjectNotFoundError) {
+          return res.status(404).json({ message: "Uploaded file not found" });
+        }
+        throw error;
       }
       
-      // Return the public URL accessible to AI services
+      // Generate public URL for AI services using the known relative path
       const baseUrl = process.env.REPL_ID ? 
         `https://${process.env.REPL_ID}.${process.env.REPL_OWNER}.repl.co` : 
         'http://localhost:5000';
-      const imageUrl = `${baseUrl}/api/public-files/uploads/${req.user.id}/${timestamp}.${fileExtension}`;
+      const imageUrl = `${baseUrl}/public-objects/${relativePath}`;
       
       res.json({ url: imageUrl });
     } catch (error) {
-      console.error("Error uploading image:", error);
-      res.status(500).json({ message: "Failed to upload image" });
+      console.error("Error confirming upload:", error);
+      res.status(500).json({ message: "Failed to confirm upload" });
     }
   });
 
@@ -121,60 +142,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Public files endpoint - NO authentication required for AI services
-  app.get('/api/public-files/*', async (req: any, res) => {
+  // Public files endpoint - NO authentication required for AI services  
+  app.get('/public-objects/:filePath(*)', async (req: any, res) => {
     try {
-      const filename = req.params['0'] as string;
+      const filePath = req.params.filePath as string;
       
       // SECURITY: Validate and sanitize the file path to prevent path traversal
-      if (!filename || filename.includes('..') || filename.includes('\0') || path.isAbsolute(filename)) {
+      if (!filePath || filePath.includes('..') || filePath.includes('\0') || path.isAbsolute(filePath)) {
         return res.status(400).json({ message: "Invalid file path" });
       }
       
-      // Download from object storage
-      const client = new Client();
-      const objectKey = `public/${filename}`;
+      const objectStorageService = new ObjectStorageService();
+      const file = await objectStorageService.searchPublicObject(filePath);
       
-      try {
-        const fileStream = await client.downloadAsStream(objectKey);
-        
-        // Handle stream errors
-        fileStream.on('error', (error) => {
-          console.error("Object storage download failed:", error);
-          if (!res.headersSent) {
-            res.status(404).json({ message: "File not found" });
-          }
-        });
-        
-        // Get proper MIME type based on file extension
-        const ext = path.extname(filename).toLowerCase();
-        const mimeTypes: { [key: string]: string } = {
-          '.jpg': 'image/jpeg',
-          '.jpeg': 'image/jpeg',
-          '.png': 'image/png',
-          '.gif': 'image/gif',
-          '.webp': 'image/webp',
-          '.mp4': 'video/mp4',
-          '.webm': 'video/webm',
-          '.mov': 'video/quicktime'
-        };
-        
-        const contentType = mimeTypes[ext] || 'application/octet-stream';
-        
-        // Set appropriate headers for public access
-        res.setHeader('Content-Type', contentType);
-        res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hours cache
-        res.setHeader('Access-Control-Allow-Origin', '*'); // Allow AI services access
-        
-        // Stream the file from object storage
-        fileStream.pipe(res);
-      } catch (error) {
-        console.error("Error downloading from object storage:", error);
-        res.status(404).json({ message: "File not found" });
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
       }
+      
+      // Use ObjectStorageService to download and stream the file
+      await objectStorageService.downloadObject(file, res);
     } catch (error) {
       console.error("Error serving public file:", error);
-      res.status(500).json({ message: "Failed to serve file" });
+      if (!res.headersSent) {
+        res.status(500).json({ message: "Failed to serve file" });
+      }
     }
   });
 
@@ -470,7 +461,7 @@ async function processProject(projectId: string) {
     const imageResult = await generateImageWithFal(
       enhancedPrompt,
       project.sceneImageUrl || "",
-      project.resolution
+      project.resolution || "1024x1024"
     );
 
     await storage.updateProject(projectId, { 

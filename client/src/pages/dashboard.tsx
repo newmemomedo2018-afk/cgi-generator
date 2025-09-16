@@ -69,10 +69,32 @@ export default function Dashboard() {
 
   const uploadProductImageMutation = useMutation({
     mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append("image", file);
-      const response = await apiRequest("POST", "/api/upload-image", formData);
-      return response.json();
+      // Step 1: Get presigned URL with file type
+      const urlResponse = await apiRequest("POST", "/api/get-upload-url", {
+        fileType: file.type
+      });
+      const { uploadUrl, objectPath, relativePath } = await urlResponse.json();
+      
+      // Step 2: Upload directly to object storage
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+      
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload file to storage');
+      }
+      
+      // Step 3: Confirm upload and get public URL
+      const confirmResponse = await apiRequest("POST", "/api/confirm-upload", {
+        objectPath: objectPath,
+        relativePath: relativePath
+      });
+      
+      return confirmResponse.json();
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {
@@ -96,10 +118,32 @@ export default function Dashboard() {
 
   const uploadSceneImageMutation = useMutation({
     mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append("image", file);
-      const response = await apiRequest("POST", "/api/upload-image", formData);
-      return response.json();
+      // Step 1: Get presigned URL with file type
+      const urlResponse = await apiRequest("POST", "/api/get-upload-url", {
+        fileType: file.type
+      });
+      const { uploadUrl, objectPath, relativePath } = await urlResponse.json();
+      
+      // Step 2: Upload directly to object storage
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+      
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload file to storage');
+      }
+      
+      // Step 3: Confirm upload and get public URL
+      const confirmResponse = await apiRequest("POST", "/api/confirm-upload", {
+        objectPath: objectPath,
+        relativePath: relativePath
+      });
+      
+      return confirmResponse.json();
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {
