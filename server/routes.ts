@@ -7,8 +7,7 @@ import { insertProjectSchema, insertTransactionSchema } from "@shared/schema";
 import { z } from "zod";
 import { promises as fs, createReadStream, existsSync } from 'fs';
 import path from 'path';
-import { enhancePromptWithGemini } from './services/gemini';
-import { generateImageWithFal } from './services/falai';
+import { enhancePromptWithGemini, generateImageWithGemini } from './services/gemini';
 import { ObjectStorageService, ObjectNotFoundError } from './objectStorage';
 
 
@@ -471,19 +470,47 @@ async function processProject(projectId: string) {
       progress: 50 
     });
 
-    // Step 2: Generate image with Fal.ai
+    // Step 2: Generate image with Gemini 2.5 Flash Image
     await storage.updateProject(projectId, { 
       status: "generating_image", 
       progress: 60 
     });
 
-    // Integrate with Fal.ai for image generation
-    const imageResult = await generateImageWithFal(
-      enhancedPrompt,
-      project.sceneImageUrl || "",
-      project.productImageUrl || "",
-      project.resolution || "1024x1024"
+    // Integrate with Gemini for multi-image generation
+    const imageBase64 = await generateImageWithGemini(
+      productImagePath,
+      sceneImagePath,
+      enhancedPrompt
     );
+    
+    // Save the generated image to Object Storage
+    const objectStorageService = new ObjectStorageService();
+    const { url: uploadUrl, objectPath, relativePath } = await objectStorageService.getImageUploadURL(
+      project.userId, 
+      'png'
+    );
+    
+    // Convert Base64 to Buffer and upload
+    const imageBuffer = Buffer.from(imageBase64, 'base64');
+    const response = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: imageBuffer,
+      headers: {
+        'Content-Type': 'image/png'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to upload generated image');
+    }
+    
+    // Generate public URL for the saved image
+    const baseUrl = process.env.REPL_ID ? 
+      `https://${process.env.REPL_ID}.${process.env.REPL_OWNER}.repl.co` : 
+      'http://localhost:5000';
+    const imageUrl = `${baseUrl}/public-objects/${relativePath}`;
+    
+    const imageResult = { url: imageUrl };
 
     await storage.updateProject(projectId, { 
       outputImageUrl: imageResult.url,
