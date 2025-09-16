@@ -66,8 +66,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw error;
       }
       
-      // Generate public URL using localhost for reliable access
-      const baseUrl = 'http://localhost:5000';
+      // Generate public URL dynamically from current request
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
       const imageUrl = `${baseUrl}/public-objects/${relativePath}`;
       
       res.json({ url: imageUrl });
@@ -171,7 +171,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       const projects = await storage.getUserProjects(userId);
-      res.json(projects);
+      
+      // Rehydrate URLs to use current request host
+      const currentHost = `${req.protocol}://${req.get('host')}`;
+      const rehydratedProjects = projects.map(project => {
+        const rehydrateUrl = (url: string | null) => {
+          if (!url) return url;
+          if (url.includes('/public-objects/')) {
+            // Extract the relative path after /public-objects/
+            const pathMatch = url.match(/\/public-objects\/(.*)/);
+            if (pathMatch) {
+              return `${currentHost}/public-objects/${pathMatch[1]}`;
+            }
+          }
+          return url;
+        };
+        
+        return {
+          ...project,
+          productImageUrl: rehydrateUrl(project.productImageUrl),
+          sceneImageUrl: rehydrateUrl(project.sceneImageUrl),
+          outputImageUrl: rehydrateUrl(project.outputImageUrl),
+          outputVideoUrl: rehydrateUrl(project.outputVideoUrl)
+        };
+      });
+      
+      res.json(rehydratedProjects);
     } catch (error) {
       console.error("Error fetching projects:", error);
       res.status(500).json({ message: "Failed to fetch projects" });
