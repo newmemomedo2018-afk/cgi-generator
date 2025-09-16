@@ -66,10 +66,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw error;
       }
       
-      // Generate public URL for AI services using the known relative path
-      const baseUrl = process.env.REPL_ID ? 
-        `https://${process.env.REPL_ID}.${process.env.REPL_OWNER}.replit.dev` : 
-        'http://localhost:5000';
+      // Generate public URL using localhost for reliable access
+      const baseUrl = 'http://localhost:5000';
       const imageUrl = `${baseUrl}/public-objects/${relativePath}`;
       
       res.json({ url: imageUrl });
