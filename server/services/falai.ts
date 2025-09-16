@@ -26,27 +26,32 @@ export async function generateImageWithFal(
       height
     });
     
-    // Use Flux Schnell with optimized parameters for scene preservation
-    const response = await fetch("https://fal.run/fal-ai/flux/schnell", {
+    // Try SDXL Inpainting with minimal required parameters
+    const response = await fetch("https://fal.run/fal-ai/stable-diffusion-xl-inpainting", {
       method: "POST",
       headers: {
         "Authorization": `Key ${process.env.FAL_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        prompt: `${prompt} IMPORTANT: Preserve the exact background, lighting, people, and environment from the reference scene image. Only replace the specified product.`,
-        image_url: sceneImageUrl, // Scene as reference
-        strength: 0.3, // Low strength to preserve more of the original scene
-        width,
-        height,
-        num_inference_steps: 4,
-        guidance_scale: 3.0, // Lower guidance for better scene adherence
+        prompt: `${prompt} Professional CGI quality, photorealistic, ultra-detailed`,
+        image_url: sceneImageUrl, // Scene to edit  
+        negative_prompt: "blurry, low quality, distorted, artifacts, cartoon, anime, sketch",
+        strength: 0.8, // How much to change
+        num_inference_steps: 25,
+        guidance_scale: 7.5,
         enable_safety_checker: true,
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`Fal.ai API error: ${response.status}`);
+      const errorBody = await response.text();
+      console.error('Fal.ai API error details:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorBody
+      });
+      throw new Error(`Fal.ai API error: ${response.status} - ${errorBody}`);
     }
 
     const result = await response.json();
