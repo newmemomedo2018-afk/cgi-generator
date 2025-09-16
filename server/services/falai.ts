@@ -15,6 +15,13 @@ export async function generateImageWithFal(
     }
     const [width, height] = resolution.split('x').map(Number);
     
+    console.log("Fal.ai request details:", {
+      prompt: prompt.substring(0, 100),
+      sceneImageUrl,
+      width,
+      height
+    });
+    
     const response = await fetch("https://fal.run/fal-ai/flux/schnell", {
       method: "POST",
       headers: {

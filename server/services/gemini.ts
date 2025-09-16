@@ -10,6 +10,14 @@ export async function enhancePromptWithGemini(
   userDescription: string
 ): Promise<string> {
   try {
+    console.log("Gemini API request details:", {
+      productImageUrl,
+      sceneImageUrl,
+      userDescription: userDescription.substring(0, 50),
+      apiKeyExists: !!process.env.GEMINI_API_KEY,
+      apiKeyLength: process.env.GEMINI_API_KEY?.length || 0
+    });
+
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `
