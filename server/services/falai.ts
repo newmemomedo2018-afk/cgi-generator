@@ -16,7 +16,9 @@ export async function generateImageWithFal(
     const [width, height] = resolution.split('x').map(Number);
     
     console.log("Fal.ai request details:", {
-      prompt: prompt.substring(0, 100),
+      promptLength: prompt.length,
+      promptPreview: prompt.substring(0, 200) + "...",
+      fullPrompt: prompt, // عرض البرومبت كامل
       sceneImageUrl,
       width,
       height
