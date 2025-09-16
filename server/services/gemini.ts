@@ -56,27 +56,29 @@ export async function enhancePromptWithGemini(
     ]);
 
     const prompt = `
-You are an expert in CGI and commercial photography. 
+You are an expert CGI artist creating precise instructions for AI image generation.
 
-ANALYZE the product image carefully and identify:
-- The exact product name, brand, and label text
-- Product shape, size, materials, and colors
-- Packaging design and visual elements
+ANALYZE the two reference images:
+1. PRODUCT IMAGE: Identify the exact product name, brand, label text, shape, size, materials, colors
+2. SCENE IMAGE: Note existing objects to be replaced, lighting conditions, environment, perspective
 
-ANALYZE the scene image for:
-- Lighting conditions and shadows
-- Environment and background elements
-- Perspective and camera angle
+Your task: Create DIRECT COMMANDS for the AI image generator to:
+1. REMOVE/REPLACE any existing products in the scene completely
+2. INSERT the exact product from the first image 
+3. Match lighting, shadows, and perspective perfectly
+
+Generate a COMMAND-STYLE prompt like this example:
+"Remove the [existing object] completely from the scene and replace it with the [exact product name] from the reference image. The [product] should appear ultra-realistic in CGI style, [size description], positioned [placement details]. Make sure the lighting and shadows match the [lighting description]. Keep the [background elements] visible. The [product] should have [texture/material details], and look [style description]. Render in high resolution with cinematic composition and sharp details."
 
 User Request: ${userDescription}
 
-Create a professional CGI prompt that places the EXACT SAME PRODUCT from the first image into the scene from the second image. Include:
-- Precise product description based on what you see in the image
-- Realistic lighting and shadow integration
-- Natural placement and perspective matching
-- High-quality photorealistic rendering specifications
+BE SPECIFIC about:
+- What to REMOVE from the scene
+- What EXACT product to INSERT  
+- HOW it should look and be positioned
+- Lighting and shadow matching requirements
 
-Write the description in English for the AI image generator. Be very specific about the product details you observe.
+Write DIRECT COMMANDS in English for the AI image generator. Use action verbs like "Remove", "Replace", "Position", "Make sure", "Keep", "Render".
 `;
 
     const result = await model.generateContent([
