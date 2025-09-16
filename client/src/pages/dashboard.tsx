@@ -51,6 +51,31 @@ export default function Dashboard() {
     retry: false,
   });
 
+  // Query for actual costs data
+  const { data: costsData, isLoading: costsLoading } = useQuery<{
+    totalCostMillicents: number;
+    totalCostUSD: string;
+    breakdown: {
+      totalProjects: number;
+      imageProjects: number; 
+      videoProjects: number;
+      estimatedImageCost: number;
+      estimatedVideoCost: number;
+    };
+    projects: Array<{
+      id: string;
+      title: string;
+      contentType: string;
+      status: string;
+      actualCostMillicents: number;
+      actualCostUSD: string;
+      createdAt: string;
+    }>;
+  }>({
+    queryKey: ["/api/actual-costs"],
+    retry: false,
+  });
+
   // Use separate useEffect for polling logic
   useEffect(() => {
     if (!projects) return;
@@ -62,6 +87,7 @@ export default function Dashboard() {
     if (hasProcessingProjects) {
       const interval = setInterval(() => {
         queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/actual-costs"] });
       }, 3000);
       return () => clearInterval(interval);
     }
@@ -355,13 +381,17 @@ export default function Dashboard() {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 glass-card p-1">
+              <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3 glass-card p-1">
                 <TabsTrigger value="new-project" className="data-[state=active]:gradient-button">
                   <Plus className="ml-2 h-4 w-4" />
                   مشروع جديد
                 </TabsTrigger>
                 <TabsTrigger value="my-projects" className="data-[state=active]:gradient-button">
                   مشاريعي
+                </TabsTrigger>
+                <TabsTrigger value="actual-costs" className="data-[state=active]:gradient-button">
+                  <Coins className="ml-2 h-4 w-4" />
+                  التكاليف الفعلية
                 </TabsTrigger>
               </TabsList>
 
@@ -585,6 +615,115 @@ export default function Dashboard() {
                           onClick={() => setActiveTab("new-project")}
                           className="gradient-button"
                           data-testid="create-first-project-button"
+                        >
+                          <Plus className="ml-2 h-4 w-4" />
+                          إنشاء مشروع جديد
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="actual-costs" className="mt-8">
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle className="text-2xl">التكاليف الفعلية</CardTitle>
+                    <p className="text-muted-foreground">تتبع التكلفة الحقيقية لاستخدام خدمات الذكاء الاصطناعي</p>
+                  </CardHeader>
+                  <CardContent>
+                    {costsLoading ? (
+                      <div className="animate-pulse">
+                        <div className="h-6 bg-muted rounded mb-4 w-1/3"></div>
+                        <div className="h-4 bg-muted rounded mb-6 w-1/2"></div>
+                        <div className="grid md:grid-cols-3 gap-4">
+                          {[1, 2, 3].map((i) => (
+                            <div key={i} className="glass-card p-4 rounded-xl">
+                              <div className="h-4 bg-muted rounded mb-2"></div>
+                              <div className="h-6 bg-muted rounded"></div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : costsData ? (
+                      <div className="space-y-6" data-testid="costs-data">
+                        {/* Total Cost Summary */}
+                        <div className="text-center p-6 glass-card rounded-xl border border-green-500/20">
+                          <div className="text-sm text-muted-foreground mb-1">إجمالي التكلفة الفعلية</div>
+                          <div className="text-3xl font-bold text-green-400" data-testid="total-cost-usd">
+                            ${costsData.totalCostUSD}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            ({costsData.totalCostMillicents} millicents)
+                          </div>
+                        </div>
+
+                        {/* Breakdown Cards */}
+                        <div className="grid md:grid-cols-3 gap-4">
+                          <div className="glass-card p-4 rounded-xl">
+                            <div className="text-sm text-muted-foreground mb-1">إجمالي المشاريع</div>
+                            <div className="text-xl font-bold" data-testid="total-projects">{costsData.breakdown.totalProjects}</div>
+                          </div>
+                          <div className="glass-card p-4 rounded-xl">
+                            <div className="text-sm text-muted-foreground mb-1">مشاريع الصور</div>
+                            <div className="text-xl font-bold text-blue-400" data-testid="image-projects">
+                              <Image className="inline ml-1 h-4 w-4" />
+                              {costsData.breakdown.imageProjects}
+                            </div>
+                          </div>
+                          <div className="glass-card p-4 rounded-xl">
+                            <div className="text-sm text-muted-foreground mb-1">مشاريع الفيديو</div>
+                            <div className="text-xl font-bold text-purple-400" data-testid="video-projects">
+                              <Video className="inline ml-1 h-4 w-4" />
+                              {costsData.breakdown.videoProjects}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Project Details */}
+                        {costsData.projects && costsData.projects.length > 0 && (
+                          <div>
+                            <h3 className="text-lg font-semibold mb-4">تفاصيل تكلفة المشاريع</h3>
+                            <div className="space-y-3">
+                              {costsData.projects.map((project) => (
+                                <div key={project.id} className="glass-card p-4 rounded-xl flex justify-between items-center">
+                                  <div className="flex items-center space-x-reverse space-x-3">
+                                    {project.contentType === 'image' ? 
+                                      <Image className="h-5 w-5 text-blue-400" /> : 
+                                      <Video className="h-5 w-5 text-purple-400" />
+                                    }
+                                    <div>
+                                      <div className="font-medium" data-testid={`project-title-${project.id}`}>
+                                        {project.title}
+                                      </div>
+                                      <div className="text-sm text-muted-foreground">
+                                        {project.status} • {new Date(project.createdAt).toLocaleDateString('ar-EG')}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="text-left">
+                                    <div className="font-bold text-green-400" data-testid={`project-cost-${project.id}`}>
+                                      ${project.actualCostUSD}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {project.actualCostMillicents} millicents
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12" data-testid="empty-costs">
+                        <div className="text-6xl mb-4">💰</div>
+                        <h3 className="text-xl font-bold mb-2">لا توجد تكاليف بعد</h3>
+                        <p className="text-muted-foreground mb-6">ابدأ بإنشاء مشروع لتتبع التكاليف الفعلية</p>
+                        <Button 
+                          onClick={() => setActiveTab("new-project")}
+                          className="gradient-button"
+                          data-testid="create-project-for-costs-button"
                         >
                           <Plus className="ml-2 h-4 w-4" />
                           إنشاء مشروع جديد
