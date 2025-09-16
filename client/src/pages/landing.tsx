@@ -103,13 +103,13 @@ export default function Landing() {
                     <h4 className="text-lg font-semibold mb-4">قبل - الصور الأصلية</h4>
                     <div className="grid grid-cols-2 gap-4">
                       <img 
-                        src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300" 
+                        src="https://via.placeholder.com/400x300/6366f1/ffffff?text=Product+Image" 
                         alt="منتج - هاتف ذكي" 
                         className="rounded-lg shadow-lg"
                         data-testid="example-product-image"
                       />
                       <img 
-                        src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300" 
+                        src="https://via.placeholder.com/400x300/8b5cf6/ffffff?text=Scene+Image" 
                         alt="مشهد - غرفة معيشة عصرية" 
                         className="rounded-lg shadow-lg"
                         data-testid="example-scene-image"
@@ -119,7 +119,7 @@ export default function Landing() {
                   <div>
                     <h4 className="text-lg font-semibold mb-4">بعد - النتيجة النهائية</h4>
                     <img 
-                      src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=400" 
+                      src="https://via.placeholder.com/600x400/10b981/ffffff?text=CGI+Result" 
                       alt="نتيجة CGI - هاتف مدمج في المشهد" 
                       className="rounded-lg shadow-lg w-full"
                       data-testid="example-result-image"
