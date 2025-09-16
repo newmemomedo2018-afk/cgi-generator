@@ -10,6 +10,13 @@ import path from 'path';
 import { enhancePromptWithGemini, generateImageWithGemini } from './services/gemini';
 import { ObjectStorageService, ObjectNotFoundError } from './objectStorage';
 
+// AI Service Costs (in millicents USD - 1/1000 USD)
+const COSTS = {
+  GEMINI_PROMPT_ENHANCEMENT: 2,   // $0.002 per request (2 millicents)
+  GEMINI_IMAGE_GENERATION: 2,     // $0.002 per request (2 millicents)
+  VIDEO_GENERATION: 500           // $0.50 per video (500 millicents)
+} as const;
+
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -444,6 +451,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint to get actual costs for user projects
+  app.get('/api/actual-costs', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const projects = await storage.getUserProjects(userId);
+      
+      // Calculate total costs and breakdown
+      let totalCostMillicents = 0;
+      let imageProjects = 0;
+      let videoProjects = 0;
+      const projectCosts = projects.map(project => {
+        const cost = project.actualCost || 0; // cost is in millicents
+        totalCostMillicents += cost;
+        
+        if (project.contentType === 'image') imageProjects++;
+        if (project.contentType === 'video') videoProjects++;
+        
+        return {
+          id: project.id,
+          title: project.title,
+          contentType: project.contentType,
+          status: project.status,
+          actualCostMillicents: cost,
+          actualCostCents: (cost / 10).toFixed(1), // Convert millicents to cents for backward compatibility
+          actualCostUSD: (cost / 1000).toFixed(4), // Convert millicents to USD
+          createdAt: project.createdAt
+        };
+      });
+      
+      res.json({
+        totalCostMillicents,
+        totalCostCents: (totalCostMillicents / 10).toFixed(1), // Convert to cents for backward compatibility
+        totalCostUSD: (totalCostMillicents / 1000).toFixed(4), // Convert to USD
+        breakdown: {
+          totalProjects: projects.length,
+          imageProjects,
+          videoProjects,
+          estimatedImageCostMillicents: imageProjects * 4, // 4 millicents per image project
+          estimatedVideoCostMillicents: videoProjects * 504, // 504 millicents per video project (includes image cost)
+          estimatedImageCostCents: (imageProjects * 4 / 10).toFixed(1), // backward compatibility
+          estimatedVideoCostCents: (videoProjects * 504 / 10).toFixed(1) // backward compatibility
+        },
+        projects: projectCosts
+      });
+    } catch (error) {
+      console.error("Error getting actual costs:", error);
+      res.status(500).json({ message: "Failed to get actual costs" });
+    }
+  });
+
   // Admin endpoint to get platform stats
   app.get('/api/admin/stats', isAuthenticated, async (req: any, res) => {
     try {
@@ -467,6 +524,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 // Async function to process CGI projects
 async function processProject(projectId: string) {
+  let totalCostMillicents = 0; // Track actual API costs in millicents (1/1000 USD)
+  
   try {
     console.log(`Starting CGI processing for project ${projectId}`);
     
@@ -509,11 +568,17 @@ async function processProject(projectId: string) {
     console.log("Image paths for Gemini:", { productImagePath, sceneImagePath });
 
     // Integrate with Gemini AI for prompt enhancement
-    const enhancedPrompt = await enhancePromptWithGemini(
-      productImagePath,
-      sceneImagePath,
-      project.description || "CGI image generation"
-    );
+    let enhancedPrompt;
+    try {
+      enhancedPrompt = await enhancePromptWithGemini(
+        productImagePath,
+        sceneImagePath,
+        project.description || "CGI image generation"
+      );
+    } finally {
+      // Record cost even if call fails
+      totalCostMillicents += COSTS.GEMINI_PROMPT_ENHANCEMENT;
+    }
 
     await storage.updateProject(projectId, { 
       enhancedPrompt,
@@ -527,11 +592,17 @@ async function processProject(projectId: string) {
     });
 
     // Integrate with Gemini for multi-image generation - now returns structured data
-    const geminiImageResult = await generateImageWithGemini(
-      productImagePath,
-      sceneImagePath,
-      enhancedPrompt
-    );
+    let geminiImageResult;
+    try {
+      geminiImageResult = await generateImageWithGemini(
+        productImagePath,
+        sceneImagePath,
+        enhancedPrompt
+      );
+    } finally {
+      // Record cost even if call fails
+      totalCostMillicents += COSTS.GEMINI_IMAGE_GENERATION;
+    }
     
     console.log("Gemini image generation result:", {
       base64Length: geminiImageResult.base64.length,
@@ -601,7 +672,13 @@ async function processProject(projectId: string) {
       try {
         // Integrate with PiAPI/Kling for video generation
         const { generateVideoWithPiAPI } = require('./services/piapi');
-        const videoResult = await generateVideoWithPiAPI(imageResult.url);
+        let videoResult;
+        try {
+          videoResult = await generateVideoWithPiAPI(imageResult.url);
+        } finally {
+          // Record cost even if video generation fails
+          totalCostMillicents += COSTS.VIDEO_GENERATION;
+        }
 
         await storage.updateProject(projectId, { 
           outputVideoUrl: videoResult.url,
@@ -613,20 +690,25 @@ async function processProject(projectId: string) {
       }
     }
 
-    // Mark as completed regardless of video generation outcome
+    // Mark as completed and update actual cost
+    console.log(`Total actual cost for project ${projectId}: $${(totalCostMillicents / 1000).toFixed(4)} (${totalCostMillicents} millicents)`);
+    
     await storage.updateProject(projectId, { 
       status: "completed", 
-      progress: 100 
+      progress: 100,
+      actualCost: totalCostMillicents
     });
 
     console.log(`CGI processing completed for project ${projectId}`);
   } catch (error) {
     console.error(`CGI processing failed for project ${projectId}:`, error);
     
-    // Mark as failed and store error message
+    // Mark as failed and store error message with actual cost incurred
+    console.log(`Actual cost incurred despite failure: $${(totalCostMillicents / 1000).toFixed(4)} (${totalCostMillicents} millicents)`);
     await storage.updateProject(projectId, { 
       status: "failed", 
-      errorMessage: error instanceof Error ? error.message : "Unknown error"
+      errorMessage: error instanceof Error ? error.message : "Unknown error",
+      actualCost: totalCostMillicents
     });
   }
 }

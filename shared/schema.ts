@@ -56,7 +56,7 @@ export const projects = pgTable("projects", {
   outputImageUrl: varchar("output_image_url"),
   outputVideoUrl: varchar("output_video_url"),
   creditsUsed: integer("credits_used").notNull(),
-  actualCost: integer("actual_cost").default(0).notNull(), // in cents (USD)
+  actualCost: integer("actual_cost").default(0).notNull(), // in millicents (1/1000 USD)
   resolution: varchar("resolution").default("1024x1024"),
   quality: varchar("quality").default("standard"),
   errorMessage: text("error_message"),
