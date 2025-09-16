@@ -120,6 +120,32 @@ export class ObjectStorageService {
     }
   }
 
+  // Get file content as buffer for AI processing
+  async getFileBuffer(file: File): Promise<Buffer> {
+    try {
+      const stream = file.createReadStream();
+      const chunks: Buffer[] = [];
+      
+      return new Promise((resolve, reject) => {
+        stream.on('data', (chunk) => {
+          chunks.push(chunk);
+        });
+        
+        stream.on('end', () => {
+          const buffer = Buffer.concat(chunks);
+          resolve(buffer);
+        });
+        
+        stream.on('error', (error) => {
+          reject(error);
+        });
+      });
+    } catch (error) {
+      console.error("Error getting file buffer:", error);
+      throw error;
+    }
+  }
+
   // Gets the upload URL for an image
   async getImageUploadURL(userId: string, fileExtension: string = 'jpg'): Promise<{url: string, objectPath: string, relativePath: string}> {
     const publicSearchPaths = this.getPublicObjectSearchPaths();

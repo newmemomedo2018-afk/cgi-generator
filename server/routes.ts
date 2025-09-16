@@ -439,10 +439,30 @@ async function processProject(projectId: string) {
       progress: 25 
     });
 
+    // Helper function to extract relative path from full URL
+    const extractRelativePath = (url: string): string => {
+      try {
+        const urlObj = new URL(url);
+        // Extract path after /public-objects/
+        const pathname = urlObj.pathname;
+        const match = pathname.match(/\/public-objects\/(.+)/);
+        return match ? match[1] : url; // Return relative path or original URL as fallback
+      } catch (error) {
+        console.warn("Could not parse URL, using as path:", url);
+        return url; // Use original string as path if URL parsing fails
+      }
+    };
+
+    // Extract relative paths for Object Storage
+    const productImagePath = extractRelativePath(project.productImageUrl || "");
+    const sceneImagePath = extractRelativePath(project.sceneImageUrl || "");
+    
+    console.log("Image paths for Gemini:", { productImagePath, sceneImagePath });
+
     // Integrate with Gemini AI for prompt enhancement
     const enhancedPrompt = await enhancePromptWithGemini(
-      project.productImageUrl || "",
-      project.sceneImageUrl || "",
+      productImagePath,
+      sceneImagePath,
       project.description || "CGI image generation"
     );
 

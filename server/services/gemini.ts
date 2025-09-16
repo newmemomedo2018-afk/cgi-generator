@@ -1,37 +1,46 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { ObjectStorageService } from '../objectStorage';
 
 const genAI = new GoogleGenerativeAI(
   process.env.GEMINI_API_KEY || ""
 );
 
-// دالة لتحويل الصورة لـ Base64
-async function imageUrlToBase64(imageUrl: string): Promise<string> {
+const objectStorage = new ObjectStorageService();
+
+// دالة لجلب الصورة من Object Storage وتحويلها لـ Base64
+async function getImageBufferFromStorage(filePath: string): Promise<string> {
   try {
-    console.log("Fetching image from:", imageUrl);
-    const response = await fetch(imageUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.statusText}`);
+    console.log("Getting image from Object Storage:", filePath);
+    
+    // جرب البحث عن الملف كـ public object أول
+    let file = await objectStorage.searchPublicObject(filePath);
+    
+    if (!file) {
+      // لو مالقيهوش، جرب تجيبه من الـ object path مباشرة
+      console.log("File not found in public search, trying direct object path");
+      file = await objectStorage.getObjectFile(filePath);
     }
     
-    const arrayBuffer = await response.arrayBuffer();
-    const base64 = Buffer.from(arrayBuffer).toString('base64');
-    console.log("Image converted to base64, length:", base64.length);
+    const buffer = await objectStorage.getFileBuffer(file);
+    const base64 = buffer.toString('base64');
+    
+    console.log("Image loaded from storage, buffer length:", buffer.length, "base64 length:", base64.length);
     return base64;
   } catch (error) {
-    console.error("Error fetching image:", error);
+    console.error("Error getting image from storage:", error);
     throw error;
   }
 }
 
 export async function enhancePromptWithGemini(
-  productImageUrl: string,
-  sceneImageUrl: string,
+  productImagePath: string,
+  sceneImagePath: string,
   userDescription: string
 ): Promise<string> {
   try {
     console.log("Gemini API request details:", {
-      productImageUrl,
-      sceneImageUrl,
+      productImagePath,
+      sceneImagePath,
       userDescription: userDescription.substring(0, 50),
       apiKeyExists: !!process.env.GEMINI_API_KEY,
       apiKeyLength: process.env.GEMINI_API_KEY?.length || 0
@@ -39,11 +48,11 @@ export async function enhancePromptWithGemini(
 
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    // تحويل الصور لـ Base64
-    console.log("Converting images to base64...");
+    // تحويل الصور لـ Base64 من Object Storage
+    console.log("Loading images from Object Storage...");
     const [productImageBase64, sceneImageBase64] = await Promise.all([
-      imageUrlToBase64(productImageUrl),
-      imageUrlToBase64(sceneImageUrl)
+      getImageBufferFromStorage(productImagePath),
+      getImageBufferFromStorage(sceneImagePath)
     ]);
 
     const prompt = `
