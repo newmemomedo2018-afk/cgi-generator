@@ -26,8 +26,8 @@ export async function generateImageWithFal(
       height
     });
     
-    // Use Flux Schnell with better parameters for scene preservation
-    const response = await fetch("https://fal.run/fal-ai/flux/schnell", {
+    // Use Fooocus Inpainting for precise scene preservation
+    const response = await fetch("https://fal.run/fal-ai/fooocus/inpaint", {
       method: "POST",
       headers: {
         "Authorization": `Key ${process.env.FAL_API_KEY}`,
@@ -35,13 +35,14 @@ export async function generateImageWithFal(
       },
       body: JSON.stringify({
         prompt,
-        image_url: sceneImageUrl, // Use scene as base image
-        strength: 0.7, // Moderate change to preserve more of original scene
-        width,
-        height,
-        num_inference_steps: 4, // Schnell model uses 4 steps
-        guidance_scale: 2.5, // Lower guidance for better adherence to input image
+        image_url: sceneImageUrl, // Exact scene to preserve
+        // No mask_url = auto-detect area to inpaint based on prompt
+        strength: 0.85, // High strength for good product replacement
+        num_inference_steps: 20, // Higher quality
+        guidance_scale: 7.5, // Strong prompt adherence
         enable_safety_checker: true,
+        outpaint_selections: [], // No outpainting, pure inpainting
+        inpaint_additional_prompt: `Reference product image: ${productImageUrl}. Replace existing product with this exact product while preserving everything else in the scene.`
       }),
     });
 
