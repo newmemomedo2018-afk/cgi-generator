@@ -26,8 +26,8 @@ export async function generateImageWithFal(
       height
     });
     
-    // Use Fooocus Inpainting for precise scene preservation
-    const response = await fetch("https://fal.run/fal-ai/fooocus/inpaint", {
+    // Use basic SDXL Inpainting with proper parameters
+    const response = await fetch("https://fal.run/fal-ai/inpaint", {
       method: "POST",
       headers: {
         "Authorization": `Key ${process.env.FAL_API_KEY}`,
@@ -35,14 +35,11 @@ export async function generateImageWithFal(
       },
       body: JSON.stringify({
         prompt,
-        image_url: sceneImageUrl, // Exact scene to preserve
-        // No mask_url = auto-detect area to inpaint based on prompt
-        strength: 0.85, // High strength for good product replacement
-        num_inference_steps: 20, // Higher quality
-        guidance_scale: 7.5, // Strong prompt adherence
+        image_url: sceneImageUrl, // Scene to edit
+        strength: 0.8, // How much to change the image
+        num_inference_steps: 20,
+        guidance_scale: 7.5,
         enable_safety_checker: true,
-        outpaint_selections: [], // No outpainting, pure inpainting
-        inpaint_additional_prompt: `Reference product image: ${productImageUrl}. Replace existing product with this exact product while preserving everything else in the scene.`
       }),
     });
 
