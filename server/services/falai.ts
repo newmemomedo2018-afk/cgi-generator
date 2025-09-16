@@ -7,6 +7,7 @@ interface FalImageResult {
 export async function generateImageWithFal(
   prompt: string,
   sceneImageUrl: string,
+  productImageUrl: string,
   resolution: string = "1024x1024"
 ): Promise<FalImageResult> {
   try {
@@ -20,11 +21,13 @@ export async function generateImageWithFal(
       promptPreview: prompt.substring(0, 200) + "...",
       fullPrompt: prompt, // عرض البرومبت كامل
       sceneImageUrl,
+      productImageUrl,
       width,
       height
     });
     
-    const response = await fetch("https://fal.run/fal-ai/flux/schnell", {
+    // Use Flux Control model for better reference image support
+    const response = await fetch("https://fal.run/fal-ai/flux/controlnet", {
       method: "POST",
       headers: {
         "Authorization": `Key ${process.env.FAL_API_KEY}`,
@@ -32,10 +35,22 @@ export async function generateImageWithFal(
       },
       body: JSON.stringify({
         prompt,
-        image_url: sceneImageUrl,
+        control_images: [
+          {
+            image_url: sceneImageUrl,
+            control_type: "reference",
+            weight: 0.8
+          },
+          {
+            image_url: productImageUrl,
+            control_type: "reference", 
+            weight: 0.7
+          }
+        ],
         width,
         height,
-        num_inference_steps: 4, // Schnell model uses 4 steps
+        num_inference_steps: 8, // ControlNet needs more steps
+        guidance_scale: 7.5,
         enable_safety_checker: true,
       }),
     });

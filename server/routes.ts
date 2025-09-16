@@ -481,6 +481,7 @@ async function processProject(projectId: string) {
     const imageResult = await generateImageWithFal(
       enhancedPrompt,
       project.sceneImageUrl || "",
+      project.productImageUrl || "",
       project.resolution || "1024x1024"
     );
 
