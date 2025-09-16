@@ -4,6 +4,25 @@ const genAI = new GoogleGenerativeAI(
   process.env.GEMINI_API_KEY || ""
 );
 
+// دالة لتحويل الصورة لـ Base64
+async function imageUrlToBase64(imageUrl: string): Promise<string> {
+  try {
+    console.log("Fetching image from:", imageUrl);
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.statusText}`);
+    }
+    
+    const arrayBuffer = await response.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString('base64');
+    console.log("Image converted to base64, length:", base64.length);
+    return base64;
+  } catch (error) {
+    console.error("Error fetching image:", error);
+    throw error;
+  }
+}
+
 export async function enhancePromptWithGemini(
   productImageUrl: string,
   sceneImageUrl: string,
@@ -20,26 +39,58 @@ export async function enhancePromptWithGemini(
 
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const prompt = `
-You are an expert in CGI and commercial photography. Analyze these two images and create a professional prompt:
+    // تحويل الصور لـ Base64
+    console.log("Converting images to base64...");
+    const [productImageBase64, sceneImageBase64] = await Promise.all([
+      imageUrlToBase64(productImageUrl),
+      imageUrlToBase64(sceneImageUrl)
+    ]);
 
-Product Image: ${productImageUrl}
-Scene Image: ${sceneImageUrl}
+    const prompt = `
+You are an expert in CGI and commercial photography. 
+
+ANALYZE the product image carefully and identify:
+- The exact product name, brand, and label text
+- Product shape, size, materials, and colors
+- Packaging design and visual elements
+
+ANALYZE the scene image for:
+- Lighting conditions and shadows
+- Environment and background elements
+- Perspective and camera angle
+
 User Request: ${userDescription}
 
-Create a professional prompt that includes:
-- Accurate description of the product and its materials
-- Analysis of lighting and shadows in the scene
-- Appropriate positioning for the product in the scene
-- Color and lighting matching
-- Technical specifications for high quality output
+Create a professional CGI prompt that places the EXACT SAME PRODUCT from the first image into the scene from the second image. Include:
+- Precise product description based on what you see in the image
+- Realistic lighting and shadow integration
+- Natural placement and perspective matching
+- High-quality photorealistic rendering specifications
 
-Write the description in English for the AI image generator. Focus on photorealistic integration, proper lighting, shadows, reflections, and natural placement.
+Write the description in English for the AI image generator. Be very specific about the product details you observe.
 `;
 
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          data: productImageBase64,
+          mimeType: "image/jpeg"
+        }
+      },
+      {
+        inlineData: {
+          data: sceneImageBase64,
+          mimeType: "image/jpeg"
+        }
+      }
+    ]);
+    
     const response = await result.response;
-    return response.text();
+    const enhancedPrompt = response.text();
+    
+    console.log("Gemini enhanced prompt:", enhancedPrompt);
+    return enhancedPrompt;
   } catch (error) {
     console.error("Gemini API error:", error);
     // Fallback prompt if Gemini fails
