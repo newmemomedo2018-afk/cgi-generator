@@ -26,8 +26,8 @@ export async function generateImageWithFal(
       height
     });
     
-    // Use Flux Control model for better reference image support
-    const response = await fetch("https://fal.run/fal-ai/flux/controlnet", {
+    // Use Flux Schnell model with enhanced prompt from Gemini
+    const response = await fetch("https://fal.run/fal-ai/flux/schnell", {
       method: "POST",
       headers: {
         "Authorization": `Key ${process.env.FAL_API_KEY}`,
@@ -35,22 +35,10 @@ export async function generateImageWithFal(
       },
       body: JSON.stringify({
         prompt,
-        control_images: [
-          {
-            image_url: sceneImageUrl,
-            control_type: "reference",
-            weight: 0.8
-          },
-          {
-            image_url: productImageUrl,
-            control_type: "reference", 
-            weight: 0.7
-          }
-        ],
+        image_url: sceneImageUrl, // Use scene as base image
         width,
         height,
-        num_inference_steps: 8, // ControlNet needs more steps
-        guidance_scale: 7.5,
+        num_inference_steps: 4, // Schnell model uses 4 steps
         enable_safety_checker: true,
       }),
     });
