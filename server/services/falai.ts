@@ -26,19 +26,21 @@ export async function generateImageWithFal(
       height
     });
     
-    // Use basic SDXL Inpainting with proper parameters
-    const response = await fetch("https://fal.run/fal-ai/inpaint", {
+    // Use Flux Schnell with optimized parameters for scene preservation
+    const response = await fetch("https://fal.run/fal-ai/flux/schnell", {
       method: "POST",
       headers: {
         "Authorization": `Key ${process.env.FAL_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        prompt,
-        image_url: sceneImageUrl, // Scene to edit
-        strength: 0.8, // How much to change the image
-        num_inference_steps: 20,
-        guidance_scale: 7.5,
+        prompt: `${prompt} IMPORTANT: Preserve the exact background, lighting, people, and environment from the reference scene image. Only replace the specified product.`,
+        image_url: sceneImageUrl, // Scene as reference
+        strength: 0.3, // Low strength to preserve more of the original scene
+        width,
+        height,
+        num_inference_steps: 4,
+        guidance_scale: 3.0, // Lower guidance for better scene adherence
         enable_safety_checker: true,
       }),
     });
