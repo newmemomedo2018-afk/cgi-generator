@@ -60,7 +60,7 @@ export default function Dashboard() {
     }
   }, [projects, queryClient]);
 
-  const uploadImageMutation = useMutation({
+  const uploadProductImageMutation = useMutation({
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append("image", file);
@@ -80,7 +80,34 @@ export default function Dashboard() {
         return;
       }
       toast({
-        title: "خطأ في رفع الصورة",
+        title: "خطأ في رفع صورة المنتج",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const uploadSceneImageMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("image", file);
+      const response = await apiRequest("POST", "/api/upload-image", formData);
+      return response.json();
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "غير مخول",
+          description: "تم تسجيل الخروج. جاري تسجيل الدخول مرة أخرى...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "خطأ في رفع صورة المشهد",
         description: error.message,
         variant: "destructive",
       });
@@ -152,27 +179,37 @@ export default function Dashboard() {
 
   const handleProductImageUpload = async (file: File) => {
     try {
-      const result = await uploadImageMutation.mutateAsync(file);
+      // Create local preview first
+      const localPreview = URL.createObjectURL(file);
+      setProjectData(prev => ({ ...prev, productImageUrl: localPreview }));
+      
+      const result = await uploadProductImageMutation.mutateAsync(file);
       setProjectData(prev => ({ ...prev, productImageUrl: result.url }));
       toast({
         title: "تم رفع الصورة",
         description: "تم رفع صورة المنتج بنجاح",
       });
     } catch (error) {
-      // Error handling is done in mutation
+      // Reset on error
+      setProjectData(prev => ({ ...prev, productImageUrl: "" }));
     }
   };
 
   const handleSceneImageUpload = async (file: File) => {
     try {
-      const result = await uploadImageMutation.mutateAsync(file);
+      // Create local preview first
+      const localPreview = URL.createObjectURL(file);
+      setProjectData(prev => ({ ...prev, sceneImageUrl: localPreview }));
+      
+      const result = await uploadSceneImageMutation.mutateAsync(file);
       setProjectData(prev => ({ ...prev, sceneImageUrl: result.url }));
       toast({
         title: "تم رفع الصورة",
         description: "تم رفع صورة المشهد بنجاح",
       });
     } catch (error) {
-      // Error handling is done in mutation
+      // Reset on error
+      setProjectData(prev => ({ ...prev, sceneImageUrl: "" }));
     }
   };
 
@@ -287,7 +324,7 @@ export default function Dashboard() {
                         <Label className="block text-sm font-medium mb-2">صورة المنتج</Label>
                         <UploadZone
                           onFileUpload={handleProductImageUpload}
-                          isUploading={uploadImageMutation.isPending}
+                          isUploading={uploadProductImageMutation.isPending}
                           previewUrl={projectData.productImageUrl}
                           label="اسحب وأفلت صورة المنتج هنا"
                           sublabel="أو انقر للتصفح - PNG, JPG حتى 10MB"
@@ -300,7 +337,7 @@ export default function Dashboard() {
                         <Label className="block text-sm font-medium mb-2">صورة المشهد</Label>
                         <UploadZone
                           onFileUpload={handleSceneImageUpload}
-                          isUploading={uploadImageMutation.isPending}
+                          isUploading={uploadSceneImageMutation.isPending}
                           previewUrl={projectData.sceneImageUrl}
                           label="اسحب وأفلت صورة المشهد هنا"
                           sublabel="أو انقر للتصفح - PNG, JPG حتى 10MB"
