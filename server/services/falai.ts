@@ -26,8 +26,8 @@ export async function generateImageWithFal(
       height
     });
     
-    // Try FLUX with better control over input image
-    const response = await fetch("https://fal.run/fal-ai/flux/dev", {
+    // Use Flux Schnell with better parameters for scene preservation
+    const response = await fetch("https://fal.run/fal-ai/flux/schnell", {
       method: "POST",
       headers: {
         "Authorization": `Key ${process.env.FAL_API_KEY}`,
@@ -36,11 +36,11 @@ export async function generateImageWithFal(
       body: JSON.stringify({
         prompt,
         image_url: sceneImageUrl, // Use scene as base image
-        strength: 0.8, // How much to change the original image (0.8 = high change)
+        strength: 0.7, // Moderate change to preserve more of original scene
         width,
         height,
-        num_inference_steps: 20, // Dev model needs more steps but gives better control
-        guidance_scale: 3.5, // Lower guidance for more adherence to input image
+        num_inference_steps: 4, // Schnell model uses 4 steps
+        guidance_scale: 2.5, // Lower guidance for better adherence to input image
         enable_safety_checker: true,
       }),
     });
