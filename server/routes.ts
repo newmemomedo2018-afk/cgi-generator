@@ -8,6 +8,9 @@ import { z } from "zod";
 import multer from "multer";
 import { promises as fs, createReadStream, existsSync } from 'fs';
 import path from 'path';
+import { enhancePromptWithGemini } from './services/gemini';
+import { generateImageWithFal } from './services/falai';
+import { Client } from '@replit/object-storage';
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -29,21 +32,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate unique filename
       const timestamp = Date.now();
       const fileExtension = req.file.originalname.split('.').pop() || 'jpg';
-      const filename = `uploads/${req.user.id}/${timestamp}.${fileExtension}`;
+      const filename = `public/uploads/${req.user.id}/${timestamp}.${fileExtension}`;
       
-      // Upload to object storage private directory
-      // Using imported fs and path modules
+      // Upload to object storage using Replit client
+      const client = new Client();
+      const { ok: uploadOk, error: uploadError } = await client.uploadFromBytes(
+        filename,
+        req.file.buffer
+      );
       
-      // Create the directory path - use tmp for reliable storage
-      const privateDir = '/tmp';
-      const uploadPath = path.join(privateDir, filename);
-      const uploadDir = path.dirname(uploadPath);
+      if (!uploadOk) {
+        console.error("Object storage upload failed:", uploadError);
+        throw new Error("Failed to upload to object storage");
+      }
       
-      await fs.mkdir(uploadDir, { recursive: true });
-      await fs.writeFile(uploadPath, req.file.buffer);
-      
-      // Return the accessible URL for the uploaded file
-      const imageUrl = `/api/files/${filename}`;
+      // Return the public URL accessible to AI services
+      const baseUrl = process.env.REPL_ID ? 
+        `https://${process.env.REPL_ID}.${process.env.REPL_OWNER}.repl.co` : 
+        'http://localhost:5000';
+      const imageUrl = `${baseUrl}/api/public-files/uploads/${req.user.id}/${timestamp}.${fileExtension}`;
       
       res.json({ url: imageUrl });
     } catch (error) {
@@ -110,6 +117,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       fileStream.pipe(res);
     } catch (error) {
       console.error("Error serving file:", error);
+      res.status(500).json({ message: "Failed to serve file" });
+    }
+  });
+
+  // Public files endpoint - NO authentication required for AI services
+  app.get('/api/public-files/*', async (req: any, res) => {
+    try {
+      const filename = req.params['0'] as string;
+      
+      // SECURITY: Validate and sanitize the file path to prevent path traversal
+      if (!filename || filename.includes('..') || filename.includes('\0') || path.isAbsolute(filename)) {
+        return res.status(400).json({ message: "Invalid file path" });
+      }
+      
+      // Download from object storage
+      const client = new Client();
+      const objectKey = `public/${filename}`;
+      
+      try {
+        const fileStream = await client.downloadAsStream(objectKey);
+        
+        // Handle stream errors
+        fileStream.on('error', (error) => {
+          console.error("Object storage download failed:", error);
+          if (!res.headersSent) {
+            res.status(404).json({ message: "File not found" });
+          }
+        });
+        
+        // Get proper MIME type based on file extension
+        const ext = path.extname(filename).toLowerCase();
+        const mimeTypes: { [key: string]: string } = {
+          '.jpg': 'image/jpeg',
+          '.jpeg': 'image/jpeg',
+          '.png': 'image/png',
+          '.gif': 'image/gif',
+          '.webp': 'image/webp',
+          '.mp4': 'video/mp4',
+          '.webm': 'video/webm',
+          '.mov': 'video/quicktime'
+        };
+        
+        const contentType = mimeTypes[ext] || 'application/octet-stream';
+        
+        // Set appropriate headers for public access
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hours cache
+        res.setHeader('Access-Control-Allow-Origin', '*'); // Allow AI services access
+        
+        // Stream the file from object storage
+        fileStream.pipe(res);
+      } catch (error) {
+        console.error("Error downloading from object storage:", error);
+        res.status(404).json({ message: "File not found" });
+      }
+    } catch (error) {
+      console.error("Error serving public file:", error);
       res.status(500).json({ message: "Failed to serve file" });
     }
   });
@@ -385,10 +449,9 @@ async function processProject(projectId: string) {
     });
 
     // Integrate with Gemini AI for prompt enhancement
-    const { enhancePromptWithGemini } = require('./services/gemini');
     const enhancedPrompt = await enhancePromptWithGemini(
-      project.productImageUrl,
-      project.sceneImageUrl,
+      project.productImageUrl || "",
+      project.sceneImageUrl || "",
       project.description || "CGI image generation"
     );
 
@@ -404,10 +467,9 @@ async function processProject(projectId: string) {
     });
 
     // Integrate with Fal.ai for image generation
-    const { generateImageWithFal } = require('./services/falai');
     const imageResult = await generateImageWithFal(
       enhancedPrompt,
-      project.sceneImageUrl,
+      project.sceneImageUrl || "",
       project.resolution
     );
 
