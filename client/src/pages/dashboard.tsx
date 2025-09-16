@@ -33,6 +33,13 @@ export default function Dashboard() {
     resolution: "1024x1024",
     quality: "standard"
   });
+  
+  // Track upload status separately for validation
+  const [isProductImageUploaded, setIsProductImageUploaded] = useState(false);
+  const [isSceneImageUploaded, setIsSceneImageUploaded] = useState(false);
+  
+  // Track reset key to force UploadZone preview reset
+  const [resetKey, setResetKey] = useState<string>("");
 
   const { data: userData } = useQuery<UserType>({
     queryKey: ["/api/auth/user"],
@@ -138,6 +145,11 @@ export default function Dashboard() {
         resolution: "1024x1024",
         quality: "standard"
       });
+      setIsProductImageUploaded(false);
+      setIsSceneImageUploaded(false);
+      
+      // Generate new reset key to clear UploadZone previews
+      setResetKey(Date.now().toString());
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {
@@ -179,37 +191,35 @@ export default function Dashboard() {
 
   const handleProductImageUpload = async (file: File) => {
     try {
-      // Create local preview first
-      const localPreview = URL.createObjectURL(file);
-      setProjectData(prev => ({ ...prev, productImageUrl: localPreview }));
-      
       const result = await uploadProductImageMutation.mutateAsync(file);
       setProjectData(prev => ({ ...prev, productImageUrl: result.url }));
+      setIsProductImageUploaded(true);
       toast({
         title: "تم رفع الصورة",
         description: "تم رفع صورة المنتج بنجاح",
       });
     } catch (error) {
-      // Reset on error
       setProjectData(prev => ({ ...prev, productImageUrl: "" }));
+      setIsProductImageUploaded(false);
+      // Clear preview on error
+      setResetKey(Date.now().toString());
     }
   };
 
   const handleSceneImageUpload = async (file: File) => {
     try {
-      // Create local preview first
-      const localPreview = URL.createObjectURL(file);
-      setProjectData(prev => ({ ...prev, sceneImageUrl: localPreview }));
-      
       const result = await uploadSceneImageMutation.mutateAsync(file);
       setProjectData(prev => ({ ...prev, sceneImageUrl: result.url }));
+      setIsSceneImageUploaded(true);
       toast({
         title: "تم رفع الصورة",
         description: "تم رفع صورة المشهد بنجاح",
       });
     } catch (error) {
-      // Reset on error
       setProjectData(prev => ({ ...prev, sceneImageUrl: "" }));
+      setIsSceneImageUploaded(false);
+      // Clear preview on error
+      setResetKey(Date.now().toString());
     }
   };
 
@@ -329,6 +339,7 @@ export default function Dashboard() {
                           label="اسحب وأفلت صورة المنتج هنا"
                           sublabel="أو انقر للتصفح - PNG, JPG حتى 10MB"
                           testId="product-upload-zone"
+                          resetKey={resetKey}
                         />
                       </div>
 
@@ -342,6 +353,7 @@ export default function Dashboard() {
                           label="اسحب وأفلت صورة المشهد هنا"
                           sublabel="أو انقر للتصفح - PNG, JPG حتى 10MB"
                           testId="scene-upload-zone"
+                          resetKey={resetKey}
                         />
                       </div>
                     </CardContent>
@@ -461,7 +473,7 @@ export default function Dashboard() {
                       {/* Generate Button */}
                       <Button 
                         onClick={handleCreateProject}
-                        disabled={createProjectMutation.isPending || !projectData.title || !projectData.productImageUrl || !projectData.sceneImageUrl}
+                        disabled={createProjectMutation.isPending || !projectData.title || !isProductImageUploaded || !isSceneImageUploaded}
                         className="w-full gradient-button"
                         size="lg"
                         data-testid="generate-cgi-button"
