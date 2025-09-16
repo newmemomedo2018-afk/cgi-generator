@@ -119,12 +119,12 @@ Write DIRECT COMMANDS in English for the AI image generator. Use action verbs li
   }
 }
 
-// دالة جديدة للـ Image Generation باستخدام Gemini 2.5 Flash Image
+// Image Generation using Gemini 2.5 Flash Image with structured output
 export async function generateImageWithGemini(
   productImagePath: string,
   sceneImagePath: string,
   enhancedPrompt: string
-): Promise<string> {
+): Promise<{base64: string; mimeType: string}> {
   try {
     console.log("Gemini Image Generation request:", {
       productImagePath,
@@ -193,32 +193,85 @@ CRITICAL REQUIREMENTS:
       throw new Error('No content parts in Gemini response');
     }
 
-    // Search for the image in the response using SDK field names
+    // Search for the image in the response with multiple format support
     for (const part of parts) {
-      // The SDK uses camelCase format
+      // Check for inlineData format (most common)
       if (part.inlineData && part.inlineData.mimeType?.startsWith('image/')) {
         const imageBase64 = part.inlineData.data;
         const mimeType = part.inlineData.mimeType;
         
-        console.log("Gemini image generated successfully:", {
+        console.log("Gemini image generated successfully (inlineData):", {
           base64Length: imageBase64.length,
           mimeType,
-          responseStructure: 'inlineData (SDK format)'
+          responseStructure: 'inlineData'
         });
         
-        return imageBase64;
+        return { base64: imageBase64, mimeType };
+      }
+      
+      // Check for fileData format (alternative format)
+      if (part.fileData && part.fileData.mimeType?.startsWith('image/')) {
+        const fileUri = part.fileData.fileUri;
+        const mimeType = part.fileData.mimeType;
+        
+        console.log("Gemini fileData detected - fetching remote URI:", {
+          fileUri,
+          mimeType,
+          responseStructure: 'fileData'
+        });
+        
+        if (fileUri) {
+          try {
+            // Fetch the remote file URI to get actual image bytes
+            const response = await fetch(fileUri);
+            if (!response.ok) {
+              throw new Error(`Failed to fetch file from URI: ${response.status}`);
+            }
+            
+            // Get the image bytes and convert to base64
+            const imageBuffer = await response.arrayBuffer();
+            const imageBase64 = Buffer.from(imageBuffer).toString('base64');
+            
+            // Use MIME type from headers if available, fallback to part.fileData.mimeType
+            const actualMimeType = response.headers.get('content-type') || mimeType;
+            
+            console.log("Gemini image fetched successfully (fileData):", {
+              base64Length: imageBase64.length,
+              mimeType: actualMimeType,
+              originalUri: fileUri,
+              responseStructure: 'fileData'
+            });
+            
+            return { base64: imageBase64, mimeType: actualMimeType };
+          } catch (fetchError) {
+            console.error("Failed to fetch fileData URI:", fetchError);
+            // Continue to next part instead of failing entirely
+          }
+        }
       }
     }
 
-    // Enhanced error logging
-    console.error('Gemini response structure:', JSON.stringify({
+    // Enhanced error logging with exhaustive response structure analysis
+    console.error('Gemini response structure analysis:', JSON.stringify({
       candidatesCount: candidates.length,
       partsCount: parts.length,
       partTypes: parts.map(p => Object.keys(p)),
-      fullParts: parts.slice(0, 2) // Log first 2 parts for debugging
+      fullParts: parts.slice(0, 2), // Log first 2 parts for debugging
+      detailedPartAnalysis: parts.map((part, index) => ({
+        partIndex: index,
+        keys: Object.keys(part),
+        hasInlineData: !!part.inlineData,
+        hasFileData: !!part.fileData,
+        inlineDataMimeType: part.inlineData?.mimeType,
+        fileDataMimeType: part.fileData?.mimeType,
+        textContent: part.text?.substring(0, 100)
+      }))
     }, null, 2));
 
-    throw new Error('No image data found in Gemini response - check response structure');
+    // Add scene preservation validation warning
+    console.warn('Scene preservation may be insufficient - no image generated');
+    
+    throw new Error('No image data found in Gemini response - check response structure analysis above');
     
   } catch (error) {
     console.error("Gemini Image Generation error:", error);

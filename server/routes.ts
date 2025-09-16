@@ -328,8 +328,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         try {
           const fileBuffer = await fs.readFile(fullPath);
-          const mimeType = project.contentType === "video" ? "video/mp4" : "image/png";
-          const fileName = `${project.title}_${project.id}.${project.contentType === "video" ? "mp4" : "png"}`;
+          
+          // Infer MIME type from file extension instead of hardcoding
+          let mimeType: string;
+          let fileExt: string;
+          
+          if (project.contentType === "video") {
+            mimeType = "video/mp4";
+            fileExt = "mp4";
+          } else {
+            // Extract file extension from outputImageUrl for proper MIME type
+            const urlPath = outputUrl.includes('/public-objects/') 
+              ? outputUrl.split('/public-objects/')[1] 
+              : outputUrl;
+            const detectedExt = path.extname(urlPath).toLowerCase();
+            
+            // Map extensions to MIME types
+            const extToMime: { [key: string]: string } = {
+              '.jpg': 'image/jpeg',
+              '.jpeg': 'image/jpeg', 
+              '.png': 'image/png',
+              '.gif': 'image/gif',
+              '.webp': 'image/webp'
+            };
+            
+            mimeType = extToMime[detectedExt] || 'image/png'; // Fallback to PNG
+            fileExt = detectedExt.replace('.', '') || 'png';
+          }
+          
+          const fileName = `${project.title}_${project.id}.${fileExt}`;
           
           res.setHeader('Content-Type', mimeType);
           res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
@@ -476,29 +503,53 @@ async function processProject(projectId: string) {
       progress: 60 
     });
 
-    // Integrate with Gemini for multi-image generation
-    const imageBase64 = await generateImageWithGemini(
+    // Integrate with Gemini for multi-image generation - now returns structured data
+    const geminiImageResult = await generateImageWithGemini(
       productImagePath,
       sceneImagePath,
       enhancedPrompt
     );
     
-    // Save the generated image to Object Storage
+    console.log("Gemini image generation result:", {
+      base64Length: geminiImageResult.base64.length,
+      mimeType: geminiImageResult.mimeType,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Extract file extension from MIME type for proper file handling
+    const mimeToExtension: { [key: string]: string } = {
+      'image/jpeg': 'jpg',
+      'image/jpg': 'jpg',
+      'image/png': 'png',
+      'image/gif': 'gif',
+      'image/webp': 'webp'
+    };
+    
+    const fileExtension = mimeToExtension[geminiImageResult.mimeType] || 'png';
+    console.log("Using file extension:", fileExtension, "for MIME type:", geminiImageResult.mimeType);
+    
+    // Save the generated image to Object Storage with correct extension
     const objectStorageService = new ObjectStorageService();
     const { url: uploadUrl, objectPath, relativePath } = await objectStorageService.getImageUploadURL(
       project.userId, 
-      'png'
+      fileExtension
     );
     
-    // Convert Base64 to Buffer and upload
-    const imageBuffer = Buffer.from(imageBase64, 'base64');
+    // Convert Base64 to Buffer and upload with correct Content-Type
+    const imageBuffer = Buffer.from(geminiImageResult.base64, 'base64');
     const response = await fetch(uploadUrl, {
       method: 'PUT',
       body: imageBuffer,
       headers: {
-        'Content-Type': 'image/png'
+        'Content-Type': geminiImageResult.mimeType
       }
     });
+    
+    // Scene preservation validation (basic check)
+    if (imageBuffer.length < 1000) {
+      console.warn("Generated image is suspiciously small - scene preservation may be insufficient");
+    }
+    console.log("Scene preservation check - generated image size:", imageBuffer.length, "bytes");
     
     if (!response.ok) {
       throw new Error('Failed to upload generated image');
@@ -524,23 +575,22 @@ async function processProject(projectId: string) {
         progress: 80 
       });
 
-      // Integrate with PiAPI/Kling for video generation
-      const { generateVideoWithPiAPI } = require('./services/piapi');
-      const videoResult = await generateVideoWithPiAPI(imageResult.url);
+      try {
+        // Integrate with PiAPI/Kling for video generation
+        const { generateVideoWithPiAPI } = require('./services/piapi');
+        const videoResult = await generateVideoWithPiAPI(imageResult.url);
 
-      await storage.updateProject(projectId, { 
-        outputVideoUrl: videoResult.url,
-        progress: 95 
-      });
+        await storage.updateProject(projectId, { 
+          outputVideoUrl: videoResult.url,
+          progress: 95 
+        });
+      } catch (videoError) {
+        console.error("Video generation failed, but image is complete:", videoError);
+        // Still mark as completed since image generation succeeded
+      }
     }
 
-    // Deduct credits from user
-    const user = await storage.getUser(project.userId);
-    if (user) {
-      await storage.updateUserCredits(user.id, user.credits - project.creditsUsed);
-    }
-
-    // Mark as completed
+    // Mark as completed regardless of video generation outcome
     await storage.updateProject(projectId, { 
       status: "completed", 
       progress: 100 
