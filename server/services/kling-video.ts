@@ -145,10 +145,24 @@ export async function generateVideoWithKling(
       throw new Error(`Failed to download image: ${imageResponse.status} ${imageResponse.statusText}`);
     }
     
-    const imageBuffer = await imageResponse.arrayBuffer();
-    const imageBase64 = Buffer.from(imageBuffer).toString('base64');
+    let imageBuffer = await imageResponse.arrayBuffer();
     
     console.log("Image downloaded successfully, size:", imageBuffer.byteLength);
+    
+    // Check if image is too large for Kling (limit appears to be around 300KB)
+    if (imageBuffer.byteLength > 300000) { // 300KB limit
+      console.log("⚠️ Image too large for Kling API:", {
+        size: imageBuffer.byteLength,
+        limit: 300000,
+        sizeInKB: Math.round(imageBuffer.byteLength / 1024)
+      });
+      
+      // For now, try with original buffer and let Kling handle it
+      // TODO: Add proper image compression library
+      console.log("🔄 Attempting to send large image to Kling anyway...");
+    }
+    
+    const imageBase64 = Buffer.from(imageBuffer).toString('base64');
 
     // Prepare Kling AI request via PiAPI
     const klingApiKey = process.env.KLING_API_KEY;
