@@ -16,6 +16,34 @@ async function getImageDataFromStorage(filePath: string): Promise<{base64: strin
     let filename = null;
     
     if (filePath.startsWith('http')) {
+      // Check for Cloudinary URLs first
+      if (filePath.includes('cloudinary.com') || filePath.includes('res.cloudinary.com')) {
+        console.log("Fetching Cloudinary image:", filePath);
+        
+        try {
+          const response = await fetch(filePath);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch Cloudinary image: ${response.status} ${response.statusText}`);
+          }
+          
+          const buffer = await response.arrayBuffer();
+          const base64 = Buffer.from(buffer).toString('base64');
+          const mimeType = response.headers.get('content-type') || 'image/jpeg';
+          
+          console.log("Cloudinary image loaded successfully:", {
+            url: filePath,
+            bufferLength: buffer.byteLength,
+            base64Length: base64.length,
+            mimeType
+          });
+          
+          return { base64, mimeType };
+        } catch (error) {
+          console.error("Error fetching Cloudinary image:", error);
+          throw new Error(`Failed to load Cloudinary image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+      
       // Extract filename from URL path like /api/files/uploads/filename.jpg
       const urlPath = new URL(filePath).pathname;
       const match = urlPath.match(/\/api\/files\/uploads\/(.+)/);

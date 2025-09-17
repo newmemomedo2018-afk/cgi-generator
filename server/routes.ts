@@ -25,23 +25,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
 
-  // Configure multer for local file storage (fallback while Object Storage has issues)
-  const multerStorage = multer.diskStorage({
-    destination: (req: any, file: any, cb: any) => {
-      const uploadDir = '/tmp/uploads';
-      if (!existsSync(uploadDir)) {
-        mkdirSync(uploadDir, { recursive: true });
-      }
-      cb(null, uploadDir);
-    },
-    filename: (req: any, file: any, cb: any) => {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      cb(null, 'product-' + uniqueSuffix + path.extname(file.originalname));
-    }
-  });
-  
+  // Configure multer for memory storage (for Cloudinary upload)
   const upload = multer({
-    storage: multerStorage,
+    storage: multer.memoryStorage(),
     limits: {
       fileSize: 10 * 1024 * 1024, // 10MB limit
     },
@@ -55,27 +41,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Upload endpoint for product images - using local storage temporarily
+  // Upload endpoint for product images - using Cloudinary
   app.post('/api/upload-product-image', isAuthenticated, upload.single('productImage'), async (req: any, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
       }
       
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const imageUrl = `${baseUrl}/api/files/uploads/${req.file.filename}`;
+      // Configure Cloudinary
+      const cloudinary = require('cloudinary').v2;
+      cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET
+      });
       
-      console.log("File uploaded locally:", {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const publicId = `user-uploads/${uniqueSuffix}`;
+      
+      console.log("Uploading to Cloudinary:", {
         originalName: req.file.originalname,
-        filename: req.file.filename,
-        imageUrl,
-        fileSize: req.file.size
+        fileSize: req.file.size,
+        publicId
+      });
+      
+      // Upload to Cloudinary
+      const cloudinaryResult = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+          {
+            resource_type: 'auto',
+            public_id: publicId,
+            quality: 'auto:best',
+            fetch_format: 'auto'
+          },
+          (error: any, result: any) => {
+            if (error) {
+              console.error("Cloudinary upload error:", error);
+              reject(error);
+            } else {
+              console.log("Cloudinary upload success:", {
+                public_id: result.public_id,
+                url: result.secure_url,
+                format: result.format,
+                bytes: result.bytes
+              });
+              resolve(result);
+            }
+          }
+        ).end(req.file.buffer);
       });
       
       res.json({ 
-        url: imageUrl,
-        imageUrl,
-        filename: req.file.filename
+        url: (cloudinaryResult as any).secure_url,
+        imageUrl: (cloudinaryResult as any).secure_url,
+        publicId: (cloudinaryResult as any).public_id
       });
     } catch (error) {
       console.error("Error uploading file:", error);
@@ -257,7 +276,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const creditsNeeded = projectData.contentType === "image" ? 1 : 5;
-      if (user.credits < creditsNeeded) {
+      const isAdmin = user.email === 'admin@test.com';
+      
+      if (!isAdmin && user.credits < creditsNeeded) {
         return res.status(400).json({ message: "Insufficient credits" });
       }
 
@@ -269,8 +290,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "pending"
       });
 
-      // Deduct credits from user account
-      await storage.updateUserCredits(userId, user.credits - creditsNeeded);
+      // Deduct credits from user account (except for admin)
+      if (!isAdmin) {
+        await storage.updateUserCredits(userId, user.credits - creditsNeeded);
+      }
 
       // Start CGI generation process asynchronously
       processProject(project.id).catch(console.error);
