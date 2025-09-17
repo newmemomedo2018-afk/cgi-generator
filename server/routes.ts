@@ -772,6 +772,46 @@ async function processProject(projectId: string) {
       progress: 75 
     });
 
+    // Step 2.5: Enhance video prompt from generated image (NEW STEP!)
+    let finalVideoPrompt = enhancedPrompt; // Default to image prompt
+    let audioPrompt: string | undefined = undefined;
+    
+    if (project.contentType === "video") {
+      console.log("🎬 Step 2.5: Analyzing generated image for optimal video production...");
+      await storage.updateProject(projectId, { 
+        status: "generating_video", 
+        progress: 78 
+      });
+
+      try {
+        const { enhanceVideoPromptFromGeneratedImage } = await import('./services/gemini');
+        
+        const videoEnhancement = await enhanceVideoPromptFromGeneratedImage(
+          geminiImageResult, // Use the generated image data
+          {
+            duration: project.videoDurationSeconds || 10,
+            includeAudio: project.includeAudio || false,
+            userDescription: project.description || "",
+            productName: project.title || "Product"
+          }
+        );
+
+        finalVideoPrompt = videoEnhancement.enhancedVideoPrompt;
+        audioPrompt = videoEnhancement.audioPrompt;
+
+        console.log("🎬 Video prompt enhanced successfully:", {
+          originalPromptLength: enhancedPrompt.length,
+          enhancedPromptLength: finalVideoPrompt.length,
+          cameraMovements: videoEnhancement.cameraMovements.substring(0, 80) + "...",
+          audioIncluded: !!audioPrompt
+        });
+
+      } catch (error) {
+        console.warn("⚠️ Video prompt enhancement failed, using original:", error);
+        // Continue with original prompt if enhancement fails
+      }
+    }
+
     // Step 3: Generate video if requested
     console.log("🎬 Checking video generation condition:", {
       projectId,
@@ -795,15 +835,17 @@ async function processProject(projectId: string) {
         try {
           console.log("🎬 Calling generateVideoWithKling with:", {
             imageUrl: imageResult.url,
-            promptLength: enhancedPrompt.length,
+            promptLength: finalVideoPrompt.length,
+            promptType: finalVideoPrompt === enhancedPrompt ? "original" : "video-enhanced",
             duration: project.videoDurationSeconds || 10,
-            includeAudio: project.includeAudio || false
+            includeAudio: project.includeAudio || false,
+            hasAudioPrompt: !!audioPrompt
           });
           
-          // Use the enhanced prompt and selected video duration
+          // Use the video-enhanced prompt and selected video duration
           videoResult = await generateVideoWithKling(
             imageResult.url, 
-            enhancedPrompt, 
+            finalVideoPrompt, // Use enhanced video prompt instead of original
             project.videoDurationSeconds || 10,
             project.includeAudio || false
           );
