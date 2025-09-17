@@ -181,6 +181,18 @@ export default function ProjectCard({ project }: ProjectCardProps) {
           </div>
         )}
 
+        {/* Enhanced Prompt Display for Completed Projects */}
+        {project.status === "completed" && project.enhancedPrompt && (
+          <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <div className="flex items-center mb-2">
+              <span className="text-sm font-medium text-blue-400">البرومبت المحسن من Gemini:</span>
+            </div>
+            <p className="text-sm text-white/80 leading-relaxed" dir="ltr">
+              {project.enhancedPrompt}
+            </p>
+          </div>
+        )}
+
         {/* Project Info */}
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span data-testid={`project-type-${project.id}`}>

@@ -686,35 +686,55 @@ async function processProject(projectId: string) {
     const fileExtension = mimeToExtension[geminiImageResult.mimeType] || 'png';
     console.log("Using file extension:", fileExtension, "for MIME type:", geminiImageResult.mimeType);
     
-    // Save the generated image locally with correct extension
+    // Save the generated image to Cloudinary
     const imageBuffer = Buffer.from(geminiImageResult.base64, 'base64');
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const filename = `generated-${uniqueSuffix}.${fileExtension}`;
-    const outputDir = '/tmp/uploads';
-    const filePath = path.join(outputDir, filename);
-    
-    // Ensure directory exists
-    if (!existsSync(outputDir)) {
-      mkdirSync(outputDir, { recursive: true });
-    }
-    
-    // Write image to local file
-    await fs.writeFile(filePath, imageBuffer);
     
     // Scene preservation validation (basic check)
     if (imageBuffer.length < 1000) {
       console.warn("Generated image is suspiciously small - scene preservation may be insufficient");
     }
     console.log("Scene preservation check - generated image size:", imageBuffer.length, "bytes");
-    console.log("Generated image saved to:", filePath);
     
-    // Generate public URL for the saved image
-    const baseUrl = process.env.REPL_ID ? 
-      `https://${process.env.REPL_ID}.${process.env.REPL_OWNER}.repl.co` : 
-      'http://localhost:5000';
-    const imageUrl = `${baseUrl}/api/files/uploads/${filename}`;
+    // Upload to Cloudinary
+    const cloudinary = require('cloudinary').v2;
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET
+    });
     
-    const imageResult = { url: imageUrl };
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const publicId = `cgi-generated/generated-${uniqueSuffix}`;
+    
+    console.log("Uploading to Cloudinary with public_id:", publicId);
+    
+    const cloudinaryResult = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        {
+          resource_type: 'image',
+          public_id: publicId,
+          folder: 'cgi-generated',
+          format: fileExtension,
+          quality: 'auto:best'
+        },
+        (error: any, result: any) => {
+          if (error) {
+            console.error("Cloudinary upload error:", error);
+            reject(error);
+          } else {
+            console.log("Cloudinary upload success:", {
+              public_id: result.public_id,
+              url: result.secure_url,
+              format: result.format,
+              bytes: result.bytes
+            });
+            resolve(result);
+          }
+        }
+      ).end(imageBuffer);
+    });
+    
+    const imageResult = { url: (cloudinaryResult as any).secure_url };
 
     await storage.updateProject(projectId, { 
       outputImageUrl: imageResult.url,
