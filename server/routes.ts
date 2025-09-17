@@ -686,36 +686,33 @@ async function processProject(projectId: string) {
     const fileExtension = mimeToExtension[geminiImageResult.mimeType] || 'png';
     console.log("Using file extension:", fileExtension, "for MIME type:", geminiImageResult.mimeType);
     
-    // Save the generated image to Object Storage with correct extension
-    const objectStorageService = new ObjectStorageService();
-    const uploadUrl = await objectStorageService.getObjectEntityUploadURL();
-    
-    // Convert Base64 to Buffer and upload with correct Content-Type
+    // Save the generated image locally with correct extension
     const imageBuffer = Buffer.from(geminiImageResult.base64, 'base64');
-    const response = await fetch(uploadUrl, {
-      method: 'PUT',
-      body: imageBuffer,
-      headers: {
-        'Content-Type': geminiImageResult.mimeType
-      }
-    });
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const filename = `generated-${uniqueSuffix}.${fileExtension}`;
+    const outputDir = '/tmp/uploads';
+    const filePath = path.join(outputDir, filename);
+    
+    // Ensure directory exists
+    if (!existsSync(outputDir)) {
+      mkdirSync(outputDir, { recursive: true });
+    }
+    
+    // Write image to local file
+    await fs.writeFile(filePath, imageBuffer);
     
     // Scene preservation validation (basic check)
     if (imageBuffer.length < 1000) {
       console.warn("Generated image is suspiciously small - scene preservation may be insufficient");
     }
     console.log("Scene preservation check - generated image size:", imageBuffer.length, "bytes");
+    console.log("Generated image saved to:", filePath);
     
-    if (!response.ok) {
-      throw new Error('Failed to upload generated image');
-    }
-    
-    // Generate public URL for the saved image by normalizing the upload URL
-    const objectPath = objectStorageService.normalizeObjectEntityPath(uploadUrl);
+    // Generate public URL for the saved image
     const baseUrl = process.env.REPL_ID ? 
       `https://${process.env.REPL_ID}.${process.env.REPL_OWNER}.repl.co` : 
       'http://localhost:5000';
-    const imageUrl = `${baseUrl}${objectPath}`;
+    const imageUrl = `${baseUrl}/api/files/uploads/${filename}`;
     
     const imageResult = { url: imageUrl };
 
