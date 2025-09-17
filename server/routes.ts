@@ -49,7 +49,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Configure Cloudinary
-      const cloudinary = require('cloudinary').v2;
+      const { v2: cloudinary } = await import('cloudinary');
       cloudinary.config({
         cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
         api_key: process.env.CLOUDINARY_API_KEY,
@@ -719,7 +719,7 @@ async function processProject(projectId: string) {
     console.log("Scene preservation check - generated image size:", imageBuffer.length, "bytes");
     
     // Upload to Cloudinary
-    const cloudinary = require('cloudinary').v2;
+    const { v2: cloudinary } = await import('cloudinary');
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
       api_key: process.env.CLOUDINARY_API_KEY,

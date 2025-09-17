@@ -247,6 +247,11 @@ export default function Dashboard() {
   }, [user, authLoading, toast]);
 
   const handleLogout = () => {
+    // Clear JWT token from localStorage
+    localStorage.removeItem('auth_token');
+    // Clear any cached user data
+    queryClient.clear();
+    // Redirect to logout endpoint
     window.location.href = "/api/logout";
   };
 
