@@ -701,12 +701,16 @@ async function processProject(projectId: string) {
       });
 
       try {
-        // Integrate with PiAPI/Kling for video generation
-        const { generateVideoWithPiAPI } = await import('./services/piapi');
+        // Integrate with Google Gemini Veo 3 for video generation
+        const { generateVideoWithGemini } = await import('./services/gemini-video');
         let videoResult;
         try {
-          // Pass the selected video duration from project
-          videoResult = await generateVideoWithPiAPI(imageResult.url, project.videoDurationSeconds || undefined);
+          // Use the enhanced prompt and selected video duration
+          videoResult = await generateVideoWithGemini(
+            imageResult.url, 
+            enhancedPrompt, 
+            project.videoDurationSeconds || undefined
+          );
         } finally {
           // Record cost even if video generation fails
           totalCostMillicents += COSTS.VIDEO_GENERATION;
