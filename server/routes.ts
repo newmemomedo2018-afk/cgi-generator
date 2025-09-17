@@ -588,16 +588,17 @@ async function processProject(projectId: string) {
     let enhancedPrompt;
     try {
       if (project.contentType === "video") {
-        const { enhanceVideoPromptWithGemini } = require('./services/gemini');
-        enhancedPrompt = await enhanceVideoPromptWithGemini(
+        const { enhanceVideoPromptWithGemini } = await import('./services/gemini');
+        const result = await enhanceVideoPromptWithGemini(
           productImagePath,
           scenePath,
           project.description || "CGI video generation",
           {
-            duration: project.videoDurationSeconds,
-            isSceneVideo
+            duration: project.videoDurationSeconds || undefined,
+            isSceneVideo: !!isSceneVideo
           }
         );
+        enhancedPrompt = result.enhancedPrompt;
       } else {
         enhancedPrompt = await enhancePromptWithGemini(
           productImagePath,
@@ -701,11 +702,11 @@ async function processProject(projectId: string) {
 
       try {
         // Integrate with PiAPI/Kling for video generation
-        const { generateVideoWithPiAPI } = require('./services/piapi');
+        const { generateVideoWithPiAPI } = await import('./services/piapi');
         let videoResult;
         try {
           // Pass the selected video duration from project
-          videoResult = await generateVideoWithPiAPI(imageResult.url, project.videoDurationSeconds);
+          videoResult = await generateVideoWithPiAPI(imageResult.url, project.videoDurationSeconds || undefined);
         } finally {
           // Record cost even if video generation fails
           totalCostMillicents += COSTS.VIDEO_GENERATION;
