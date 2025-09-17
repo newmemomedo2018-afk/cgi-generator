@@ -16,6 +16,7 @@ import multer from 'multer';
 const COSTS = {
   GEMINI_PROMPT_ENHANCEMENT: 2,   // $0.002 per request (2 millicents)
   GEMINI_IMAGE_GENERATION: 2,     // $0.002 per request (2 millicents)
+  GEMINI_VIDEO_ANALYSIS: 3,       // $0.003 per video analysis (3 millicents) - NEW
   VIDEO_GENERATION: 130,          // $0.13 per video (130 millicents) - Updated for Kling AI
   AUDIO_GENERATION: 70            // $0.07 per audio addition (70 millicents) - New for Kling Audio
 } as const;
@@ -799,16 +800,24 @@ async function processProject(projectId: string) {
         finalVideoPrompt = videoEnhancement.enhancedVideoPrompt;
         audioPrompt = videoEnhancement.audioPrompt;
 
+        // Add cost for video prompt enhancement
+        totalCostMillicents += COSTS.GEMINI_VIDEO_ANALYSIS;
+
         console.log("🎬 Video prompt enhanced successfully:", {
           originalPromptLength: enhancedPrompt.length,
           enhancedPromptLength: finalVideoPrompt.length,
           cameraMovements: videoEnhancement.cameraMovements.substring(0, 80) + "...",
-          audioIncluded: !!audioPrompt
+          audioIncluded: !!audioPrompt,
+          additionalCost: "$0.003"
         });
 
       } catch (error) {
         console.warn("⚠️ Video prompt enhancement failed, using original:", error);
         // Continue with original prompt if enhancement fails
+        await storage.updateProject(projectId, { 
+          status: "generating_video", 
+          progress: 80 
+        });
       }
     }
 
