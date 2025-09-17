@@ -86,10 +86,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserCredits(id: string, credits: number): Promise<void> {
-    await db
-      .update(users)
-      .set({ credits, updatedAt: new Date() })
-      .where(eq(users.id, id));
+    // Get user info to check if admin
+    const user = await this.getUser(id);
+    if (user && user.email === 'admin@test.com') {
+      // Admin always keeps 1000 credits
+      await db
+        .update(users)
+        .set({ credits: 1000, updatedAt: new Date() })
+        .where(eq(users.id, id));
+    } else {
+      await db
+        .update(users)
+        .set({ credits, updatedAt: new Date() })
+        .where(eq(users.id, id));
+    }
   }
 
   // Project operations

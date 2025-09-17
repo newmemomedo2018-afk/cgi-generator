@@ -379,9 +379,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const paymentIntent = event.data.object;
         const { userId, credits } = paymentIntent.metadata;
         
-        // Update user credits
+        // Update user credits (except for admin)
         const user = await storage.getUser(userId);
-        if (user) {
+        if (user && user.email !== 'admin@test.com') {
           await storage.updateUserCredits(userId, user.credits + parseInt(credits));
         }
       }
