@@ -293,29 +293,60 @@ async function signObjectURL({
   method: "GET" | "PUT" | "DELETE" | "HEAD";
   ttlSec: number;
 }): Promise<string> {
-  const request = {
-    bucket_name: bucketName,
-    object_name: objectName,
-    method,
-    expires_at: new Date(Date.now() + ttlSec * 1000).toISOString(),
-  };
-  const response = await fetch(
-    `${REPLIT_SIDECAR_ENDPOINT}/object-storage/signed-object-url`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(request),
+  try {
+    // Step 1: Get access token from sidecar
+    const tokenResponse = await fetch(`${REPLIT_SIDECAR_ENDPOINT}/token`);
+    
+    if (!tokenResponse.ok) {
+      throw new Error(
+        `Failed to get access token from Replit sidecar. ` +
+        `Make sure you're running on Replit with Object Storage enabled.`
+      );
     }
-  );
-  if (!response.ok) {
+    
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
+    
+    if (!accessToken) {
+      throw new Error(`No access token received from Replit sidecar`);
+    }
+
+    // Step 2: Use the access token to sign the URL
+    const request = {
+      bucket_name: bucketName,
+      object_name: objectName,
+      method,
+      expires_at: new Date(Date.now() + ttlSec * 1000).toISOString(),
+    };
+    
+    const response = await fetch(
+      `${REPLIT_SIDECAR_ENDPOINT}/object-storage/signed-object-url`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(request),
+      }
+    );
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Failed to sign object URL, errorcode: ${response.status}. ` +
+        `Error: ${errorText}. Make sure you're running on Replit with Object Storage enabled.`
+      );
+    }
+
+    const { signed_url: signedURL } = await response.json();
+    return signedURL;
+  } catch (error) {
+    console.error("Error in signObjectURL:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     throw new Error(
-      `Failed to sign object URL, errorcode: ${response.status}, ` +
-        `make sure you're running on Replit`
+      `Object Storage signing failed: ${errorMessage}. ` +
+      `Make sure you're running on Replit with the Object Storage tool enabled.`
     );
   }
-
-  const { signed_url: signedURL } = await response.json();
-  return signedURL;
 }
