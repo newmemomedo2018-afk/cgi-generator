@@ -7,21 +7,27 @@ export async function generateVideoWithPiAPI(imageUrl: string, durationSeconds?:
   // Default to 5 seconds if no duration provided
   const duration = durationSeconds || 5;
   try {
-    // Create video generation job
-    const response = await fetch("https://api.piapi.ai/api/kling/v1/videos/generations", {
+    // Create video generation job using new API structure
+    const response = await fetch("https://api.piapi.ai/api/v1/task", {
       method: "POST",
       headers: {
-        "X-API-Key": process.env.PIAPI_API_KEY || "",
+        "x-api-key": process.env.PIAPI_API_KEY || "",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "kling-1.6",
-        image: imageUrl,
-        duration: duration.toString(),
-        aspect_ratio: "16:9",
-        prompt: "Professional product showcase with natural movement and cinematic quality",
-        quality: "professional",
-        camera_movement: "subtle",
+        model: "kling",
+        task_type: "video_generation",
+        input: {
+          image_url: imageUrl,
+          prompt: "Professional product showcase with natural movement and cinematic quality",
+          duration: duration,
+          aspect_ratio: "16:9",
+          mode: "std",
+          version: "1.6"
+        },
+        config: {
+          service_mode: "public"
+        }
       }),
     });
 
@@ -30,7 +36,7 @@ export async function generateVideoWithPiAPI(imageUrl: string, durationSeconds?:
     }
 
     const job = await response.json();
-    const jobId = job.id;
+    const taskId = job.data.task_id;
 
     // Poll for completion
     let attempts = 0;
@@ -39,9 +45,9 @@ export async function generateVideoWithPiAPI(imageUrl: string, durationSeconds?:
     while (attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
       
-      const statusResponse = await fetch(`https://api.piapi.ai/api/kling/v1/videos/generations/${jobId}`, {
+      const statusResponse = await fetch(`https://api.piapi.ai/api/v1/task/${taskId}`, {
         headers: {
-          "X-API-Key": process.env.PIAPI_API_KEY || "",
+          "x-api-key": process.env.PIAPI_API_KEY || "",
         },
       });
 
@@ -49,16 +55,17 @@ export async function generateVideoWithPiAPI(imageUrl: string, durationSeconds?:
         throw new Error(`PiAPI status check error: ${statusResponse.status}`);
       }
 
-      const status = await statusResponse.json();
+      const result = await statusResponse.json();
+      const taskData = result.data;
       
-      if (status.status === "completed" && status.output && status.output.length > 0) {
+      if (taskData.status === "completed" && taskData.output && taskData.output.works && taskData.output.works.length > 0) {
         return {
-          url: status.output[0].url,
+          url: taskData.output.works[0].video.resource,
           duration,
         };
       }
       
-      if (status.status === "failed") {
+      if (taskData.status === "failed") {
         throw new Error("Video generation failed");
       }
       
