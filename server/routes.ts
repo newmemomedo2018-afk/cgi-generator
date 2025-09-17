@@ -16,7 +16,8 @@ import multer from 'multer';
 const COSTS = {
   GEMINI_PROMPT_ENHANCEMENT: 2,   // $0.002 per request (2 millicents)
   GEMINI_IMAGE_GENERATION: 2,     // $0.002 per request (2 millicents)
-  VIDEO_GENERATION: 500           // $0.50 per video (500 millicents)
+  VIDEO_GENERATION: 130,          // $0.13 per video (130 millicents) - Updated for Kling AI
+  AUDIO_GENERATION: 70            // $0.07 per audio addition (70 millicents) - New for Kling Audio
 } as const;
 
 
@@ -275,7 +276,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      const creditsNeeded = projectData.contentType === "image" ? 1 : 5;
+      const creditsNeeded = projectData.contentType === "image" ? 1 : 
+                         projectData.includeAudio ? 7 : 5; // 5 for video + 2 for audio
       const isAdmin = user.email === 'admin@test.com';
       
       if (!isAdmin && user.credits < creditsNeeded) {
@@ -780,11 +782,16 @@ async function processProject(projectId: string) {
           videoResult = await generateVideoWithKling(
             imageResult.url, 
             enhancedPrompt, 
-            project.videoDurationSeconds || 10
+            project.videoDurationSeconds || 10,
+            project.includeAudio || false
           );
         } finally {
           // Record cost even if video generation fails
           totalCostMillicents += COSTS.VIDEO_GENERATION;
+          // Add audio cost if audio was requested
+          if (project.includeAudio) {
+            totalCostMillicents += COSTS.AUDIO_GENERATION;
+          }
         }
 
         await storage.updateProject(projectId, { 

@@ -8,10 +8,125 @@ interface KlingVideoResult {
   duration: number;
 }
 
+/**
+ * Add audio to existing video using PiAPI Kling Sound API
+ */
+async function addAudioToVideo(
+  videoUrl: string, 
+  prompt: string, 
+  klingApiKey: string
+): Promise<string> {
+  console.log("Adding audio to video via PiAPI Kling Sound...", {
+    videoUrl,
+    prompt: prompt.substring(0, 50) + "..."
+  });
+
+  // Create audio generation request for video
+  const audioRequestPayload = {
+    video_url: videoUrl,
+    prompt: `Add atmospheric background music and realistic sound effects that match the scene. ${prompt.substring(0, 100)}`,
+    duration: "auto" // Automatically match video duration
+  };
+
+  // Make request to PiAPI Kling Sound endpoint
+  const response = await fetch('https://api.piapi.ai/kling/sound', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${klingApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(audioRequestPayload)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Kling Sound API error:", {
+      status: response.status,
+      statusText: response.statusText,
+      error: errorText
+    });
+    throw new Error(`Kling Sound API error: ${response.status} - ${errorText}`);
+  }
+
+  const result = await response.json();
+  console.log("Kling Sound request submitted:", {
+    taskId: result.task_id,
+    status: result.status
+  });
+
+  // Poll for completion
+  const taskId = result.task_id;
+  let attempts = 0;
+  const maxAttempts = 30; // 5 minutes max for audio processing
+
+  while (attempts < maxAttempts) {
+    await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
+    attempts++;
+
+    console.log(`Checking Kling Sound status, attempt ${attempts}/${maxAttempts}...`);
+
+    // Check task status
+    const statusResponse = await fetch(`https://api.piapi.ai/kling/task/${taskId}`, {
+      headers: {
+        'Authorization': `Bearer ${klingApiKey}`,
+      }
+    });
+
+    if (!statusResponse.ok) {
+      console.error("Failed to check Kling Sound status:", statusResponse.status);
+      continue;
+    }
+
+    const statusResult = await statusResponse.json();
+    console.log("Kling Sound status update:", {
+      status: statusResult.status,
+      progress: statusResult.progress || 'N/A'
+    });
+
+    if (statusResult.status === 'completed' || statusResult.status === 'success') {
+      console.log("Kling Sound generation completed!");
+      
+      // Get the video with audio URL from multiple possible response formats
+      const videoWithAudioUrl = statusResult.output?.video_url || 
+                                statusResult.result?.video_url || 
+                                statusResult.video_url ||
+                                statusResult.output?.result?.video_url;
+      
+      if (!videoWithAudioUrl) {
+        console.error("No video URL found in audio completion result:", statusResult);
+        throw new Error("Video with audio URL not found in Kling Sound response");
+      }
+
+      console.log("Audio added to video successfully:", {
+        originalVideoUrl: videoUrl,
+        videoWithAudioUrl,
+        attempts
+      });
+
+      return videoWithAudioUrl;
+    }
+
+    if (statusResult.status === 'failed' || statusResult.status === 'error') {
+      console.error("Kling Sound generation failed:", statusResult);
+      throw new Error(`Kling Sound generation failed: ${statusResult.error || 'Unknown error'}`);
+    }
+
+    // Continue polling if still processing
+    if (statusResult.status === 'processing' || statusResult.status === 'pending' || statusResult.status === 'running') {
+      console.log(`Kling Sound still processing... (${statusResult.progress || 'N/A'})`);
+      continue;
+    }
+  }
+
+  // Timeout reached
+  throw new Error(`Kling Sound generation timed out after ${maxAttempts * 10} seconds`);
+}
+
 export async function generateVideoWithKling(
   imageUrl: string, 
   prompt: string, 
-  durationSeconds: number = 10
+  durationSeconds: number = 10,
+  includeAudio: boolean = false
 ): Promise<KlingVideoResult> {
   console.log("Starting Kling AI video generation...", {
     imageUrl,
@@ -130,8 +245,21 @@ export async function generateVideoWithKling(
           attempts
         });
 
+        // Add audio if requested
+        let finalVideoUrl = videoUrl;
+        if (includeAudio) {
+          console.log("Adding audio to video...");
+          try {
+            finalVideoUrl = await addAudioToVideo(videoUrl, prompt, klingApiKey);
+            console.log("Audio added successfully to video:", finalVideoUrl);
+          } catch (audioError) {
+            console.error("Failed to add audio, using original video:", audioError);
+            // Continue with original video if audio fails
+          }
+        }
+
         return {
-          url: videoUrl,
+          url: finalVideoUrl,
           duration: durationSeconds
         };
       }

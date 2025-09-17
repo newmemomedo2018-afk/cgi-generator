@@ -32,6 +32,7 @@ export default function Dashboard() {
     sceneVideoUrl: "",
     contentType: "image" as "image" | "video",
     videoDurationSeconds: 5,
+    includeAudio: false,
     resolution: "1024x1024",
     quality: "standard"
   });
@@ -203,6 +204,7 @@ export default function Dashboard() {
         sceneVideoUrl: "",
         contentType: "image",
         videoDurationSeconds: 5,
+        includeAudio: false,
         resolution: "1024x1024",
         quality: "standard"
       });
@@ -525,8 +527,12 @@ export default function Dashboard() {
                             <CardContent className="p-6 text-center">
                               <Video className="h-8 w-8 mx-auto mb-3 text-accent" />
                               <h4 className="font-bold mb-2">فيديو CGI</h4>
-                              <p className="text-sm text-muted-foreground mb-2">5 كريدت</p>
-                              <Badge variant="outline" className="text-xs">$0.13</Badge>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                {projectData.includeAudio ? "7 كريدت" : "5 كريدت"}
+                              </p>
+                              <Badge variant="outline" className="text-xs">
+                                {projectData.includeAudio ? "$0.20" : "$0.13"}
+                              </Badge>
                             </CardContent>
                           </Card>
                         </div>
@@ -561,6 +567,36 @@ export default function Dashboard() {
                                 <p className="text-xs text-muted-foreground">تفصيل أكثر</p>
                               </CardContent>
                             </Card>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Audio Option - Only show for video content */}
+                      {projectData.contentType === "video" && (
+                        <div className="border border-border/20 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                              <Label className="text-sm font-medium">إضافة صوت للفيديو</Label>
+                              <p className="text-xs text-muted-foreground">
+                                إضافة مؤثرات صوتية وموسيقى متزامنة (+2 كريدت)
+                              </p>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id="include-audio"
+                                checked={projectData.includeAudio}
+                                onChange={(e) => setProjectData(prev => ({ 
+                                  ...prev, 
+                                  includeAudio: e.target.checked 
+                                }))}
+                                className="h-4 w-4 text-primary focus:ring-primary border-border rounded"
+                                data-testid="audio-checkbox"
+                              />
+                              <Label htmlFor="include-audio" className="text-sm">
+                                {projectData.includeAudio ? "مفعل" : "معطل"}
+                              </Label>
+                            </div>
                           </div>
                         </div>
                       )}
