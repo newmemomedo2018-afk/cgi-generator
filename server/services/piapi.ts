@@ -23,16 +23,20 @@ export async function generateVideoWithPiAPI(imageUrl: string, durationSeconds?:
           duration: duration,
           aspect_ratio: "16:9",
           mode: "std",
-          version: "1.6"
-        },
-        config: {
-          service_mode: "public"
+          version: "1.6",
+          cfg_scale: "0.5"
         }
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`PiAPI error: ${response.status}`);
+      const errorText = await response.text();
+      console.error("PiAPI error details:", {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      throw new Error(`PiAPI error: ${response.status} - ${errorText}`);
     }
 
     const job = await response.json();
