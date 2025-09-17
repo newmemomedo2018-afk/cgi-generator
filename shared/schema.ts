@@ -46,8 +46,10 @@ export const projects = pgTable("projects", {
   title: varchar("title").notNull(),
   description: text("description"),
   productImageUrl: varchar("product_image_url").notNull(),
-  sceneImageUrl: varchar("scene_image_url").notNull(),
+  sceneImageUrl: varchar("scene_image_url"), // Made nullable to support sceneVideoUrl
+  sceneVideoUrl: varchar("scene_video_url"), // New: support video scene input
   contentType: varchar("content_type", { enum: ["image", "video"] }).notNull(),
+  videoDurationSeconds: integer("video_duration_seconds").default(5), // New: 5 or 10 seconds
   status: varchar("status", { 
     enum: ["pending", "processing", "enhancing_prompt", "generating_image", "generating_video", "completed", "failed"] 
   }).default("pending"),
@@ -83,9 +85,18 @@ export const insertProjectSchema = createInsertSchema(projects).pick({
   description: true,
   productImageUrl: true,
   sceneImageUrl: true,
+  sceneVideoUrl: true,
   contentType: true,
+  videoDurationSeconds: true,
   resolution: true,
   quality: true,
+}).refine((data) => {
+  // Ensure either sceneImageUrl OR sceneVideoUrl is provided, but not both
+  const hasImage = !!data.sceneImageUrl;
+  const hasVideo = !!data.sceneVideoUrl;
+  return hasImage !== hasVideo; // XOR: exactly one must be true
+}, {
+  message: "Provide either scene image or scene video, not both",
 });
 
 export const insertTransactionSchema = createInsertSchema(transactions).pick({

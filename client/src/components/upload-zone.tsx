@@ -10,6 +10,7 @@ interface UploadZoneProps {
   sublabel: string;
   testId: string;
   resetKey?: string; // Add resetKey prop to force preview reset
+  acceptedTypes?: 'image' | 'video' | 'both'; // New: define accepted file types
 }
 
 export default function UploadZone({
@@ -19,10 +20,12 @@ export default function UploadZone({
   label,
   sublabel,
   testId,
-  resetKey
+  resetKey,
+  acceptedTypes = 'image'
 }: UploadZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const [selectedFileType, setSelectedFileType] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Clean up blob URL when component unmounts or preview changes
@@ -41,6 +44,7 @@ export default function UploadZone({
         URL.revokeObjectURL(localPreview);
       }
       setLocalPreview(null);
+      setSelectedFileType(null);
       // Also clear file input to allow re-selecting same file
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -69,13 +73,27 @@ export default function UploadZone({
   };
 
   const handleFileSelect = (file: File) => {
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
+    // Validate file type based on acceptedTypes
+    const isValidType = (() => {
+      switch (acceptedTypes) {
+        case 'image':
+          return file.type.startsWith('image/');
+        case 'video':
+          return file.type.startsWith('video/');
+        case 'both':
+          return file.type.startsWith('image/') || file.type.startsWith('video/');
+        default:
+          return file.type.startsWith('image/');
+      }
+    })();
+
+    if (!isValidType) {
       return;
     }
 
-    // Validate file size (10MB limit)
-    if (file.size > 10 * 1024 * 1024) {
+    // Validate file size (50MB limit for videos, 10MB for images)
+    const sizeLimit = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > sizeLimit) {
       return;
     }
 
@@ -85,6 +103,7 @@ export default function UploadZone({
     }
     const newPreview = URL.createObjectURL(file);
     setLocalPreview(newPreview);
+    setSelectedFileType(file.type);
 
     onFileUpload(file);
   };
@@ -118,13 +137,24 @@ export default function UploadZone({
             </>
           ) : localPreview ? (
             <>
-              <img 
-                src={localPreview} 
-                alt="معاينة الصورة" 
-                className="w-full h-48 object-cover rounded-lg mb-4"
-                data-testid={`${testId}-preview`}
-              />
-              <p className="text-sm text-muted-foreground">انقر لتغيير الصورة</p>
+              {/* Dynamic preview based on file type */}
+              {selectedFileType?.startsWith('video/') ? (
+                <video 
+                  src={localPreview} 
+                  className="w-full h-48 object-cover rounded-lg mb-4"
+                  data-testid={`${testId}-video-preview`}
+                  controls
+                  muted
+                />
+              ) : (
+                <img 
+                  src={localPreview} 
+                  alt="معاينة الصورة" 
+                  className="w-full h-48 object-cover rounded-lg mb-4"
+                  data-testid={`${testId}-preview`}
+                />
+              )}
+              <p className="text-sm text-muted-foreground">انقر لتغيير {acceptedTypes === 'video' ? 'الفيديو' : acceptedTypes === 'both' ? 'الملف' : 'الصورة'}</p>
             </>
           ) : (
             <>
@@ -139,7 +169,12 @@ export default function UploadZone({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept={
+          acceptedTypes === 'image' ? 'image/*' :
+          acceptedTypes === 'video' ? 'video/*' :
+          acceptedTypes === 'both' ? 'image/*,video/*' :
+          'image/*'
+        }
         onChange={handleFileChange}
         className="hidden"
         data-testid={`${testId}-input`}

@@ -29,7 +29,9 @@ export default function Dashboard() {
     description: "",
     productImageUrl: "",
     sceneImageUrl: "",
+    sceneVideoUrl: "",
     contentType: "image" as "image" | "video",
+    videoDurationSeconds: 5,
     resolution: "1024x1024",
     quality: "standard"
   });
@@ -142,7 +144,8 @@ export default function Dashboard() {
     },
   });
 
-  const uploadSceneImageMutation = useMutation({
+  // Combined scene upload mutation for both image and video
+  const uploadSceneMutation = useMutation({
     mutationFn: async (file: File) => {
       // Step 1: Get presigned URL with file type
       const urlResponse = await apiRequest("POST", "/api/get-upload-url", {
@@ -211,7 +214,9 @@ export default function Dashboard() {
         description: "",
         productImageUrl: "",
         sceneImageUrl: "",
+        sceneVideoUrl: "",
         contentType: "image",
+        videoDurationSeconds: 5,
         resolution: "1024x1024",
         quality: "standard"
       });
@@ -278,7 +283,7 @@ export default function Dashboard() {
 
   const handleSceneImageUpload = async (file: File) => {
     try {
-      const result = await uploadSceneImageMutation.mutateAsync(file);
+      const result = await uploadSceneMutation.mutateAsync(file);
       setProjectData(prev => ({ ...prev, sceneImageUrl: result.url }));
       setIsSceneImageUploaded(true);
       toast({
@@ -287,6 +292,42 @@ export default function Dashboard() {
       });
     } catch (error) {
       setProjectData(prev => ({ ...prev, sceneImageUrl: "" }));
+      setIsSceneImageUploaded(false);
+      // Clear preview on error
+      setResetKey(Date.now().toString());
+    }
+  };
+
+  const handleSceneUpload = async (file: File) => {
+    try {
+      const result = await uploadSceneMutation.mutateAsync(file);
+      
+      // Store in appropriate field based on file type
+      if (file.type.startsWith('video/')) {
+        setProjectData(prev => ({ 
+          ...prev, 
+          sceneVideoUrl: result.url,
+          sceneImageUrl: "" // Clear image URL if video is uploaded
+        }));
+      } else {
+        setProjectData(prev => ({ 
+          ...prev, 
+          sceneImageUrl: result.url,
+          sceneVideoUrl: "" // Clear video URL if image is uploaded
+        }));
+      }
+      
+      setIsSceneImageUploaded(true);
+      toast({
+        title: "تم رفع الملف",
+        description: `تم رفع ${file.type.startsWith('video/') ? 'فيديو' : 'صورة'} المشهد بنجاح`,
+      });
+    } catch (error) {
+      setProjectData(prev => ({ 
+        ...prev, 
+        sceneImageUrl: "", 
+        sceneVideoUrl: ""
+      }));
       setIsSceneImageUploaded(false);
       // Clear preview on error
       setResetKey(Date.now().toString());
@@ -303,10 +344,11 @@ export default function Dashboard() {
       return;
     }
 
-    if (!projectData.productImageUrl || !projectData.sceneImageUrl) {
+    const hasSceneFile = projectData.sceneImageUrl || projectData.sceneVideoUrl;
+    if (!projectData.productImageUrl || !hasSceneFile) {
       toast({
-        title: "صور مطلوبة",
-        description: "يرجى رفع صورة المنتج وصورة المشهد",
+        title: "ملفات مطلوبة",
+        description: "يرجى رفع صورة المنتج وملف المشهد (صورة أو فيديو)",
         variant: "destructive",
       });
       return;
@@ -417,17 +459,29 @@ export default function Dashboard() {
                         />
                       </div>
 
-                      {/* Scene Image Upload */}
+                      {/* Scene Upload (Image or Video based on content type) */}
                       <div>
-                        <Label className="block text-sm font-medium mb-2">صورة المشهد</Label>
+                        <Label className="block text-sm font-medium mb-2">
+                          {projectData.contentType === "video" ? "صورة أو فيديو المشهد" : "صورة المشهد"}
+                        </Label>
                         <UploadZone
-                          onFileUpload={handleSceneImageUpload}
-                          isUploading={uploadSceneImageMutation.isPending}
-                          previewUrl={projectData.sceneImageUrl}
-                          label="اسحب وأفلت صورة المشهد هنا"
-                          sublabel="أو انقر للتصفح - PNG, JPG حتى 10MB"
+                          onFileUpload={handleSceneUpload}
+                          isUploading={uploadSceneMutation.isPending}
+                          previewUrl={projectData.contentType === "video" ? 
+                            (projectData.sceneVideoUrl || projectData.sceneImageUrl) : 
+                            projectData.sceneImageUrl
+                          }
+                          label={projectData.contentType === "video" ? 
+                            "اسحب وأفلت صورة أو فيديو المشهد هنا" : 
+                            "اسحب وأفلت صورة المشهد هنا"
+                          }
+                          sublabel={projectData.contentType === "video" ? 
+                            "أو انقر للتصفح - صور حتى 10MB، فيديو حتى 50MB" : 
+                            "أو انقر للتصفح - PNG, JPG حتى 10MB"
+                          }
                           testId="scene-upload-zone"
                           resetKey={resetKey}
+                          acceptedTypes={projectData.contentType === "video" ? "both" : "image"}
                         />
                       </div>
                     </CardContent>
@@ -486,6 +540,39 @@ export default function Dashboard() {
                           </Card>
                         </div>
                       </div>
+
+                      {/* Video Duration Selection - Only show for video content */}
+                      {projectData.contentType === "video" && (
+                        <div>
+                          <Label className="block text-sm font-medium mb-4">مدة الفيديو</Label>
+                          <div className="grid grid-cols-2 gap-4">
+                            <Card 
+                              className={`cursor-pointer transition-all hover:bg-white/10 ${
+                                projectData.videoDurationSeconds === 5 ? "ring-2 ring-primary" : ""
+                              }`}
+                              onClick={() => setProjectData(prev => ({ ...prev, videoDurationSeconds: 5 }))}
+                              data-testid="duration-5s-card"
+                            >
+                              <CardContent className="p-4 text-center">
+                                <h4 className="font-medium mb-1">5 ثوانٍ</h4>
+                                <p className="text-xs text-muted-foreground">سريع ومؤثر</p>
+                              </CardContent>
+                            </Card>
+                            <Card 
+                              className={`cursor-pointer transition-all hover:bg-white/10 ${
+                                projectData.videoDurationSeconds === 10 ? "ring-2 ring-primary" : ""
+                              }`}
+                              onClick={() => setProjectData(prev => ({ ...prev, videoDurationSeconds: 10 }))}
+                              data-testid="duration-10s-card"
+                            >
+                              <CardContent className="p-4 text-center">
+                                <h4 className="font-medium mb-1">10 ثوانٍ</h4>
+                                <p className="text-xs text-muted-foreground">تفصيل أكثر</p>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Project Description */}
                       <div>

@@ -3,7 +3,9 @@ interface PiAPIVideoResult {
   duration: number;
 }
 
-export async function generateVideoWithPiAPI(imageUrl: string): Promise<PiAPIVideoResult> {
+export async function generateVideoWithPiAPI(imageUrl: string, durationSeconds?: number): Promise<PiAPIVideoResult> {
+  // Default to 5 seconds if no duration provided
+  const duration = durationSeconds || 5;
   try {
     // Create video generation job
     const response = await fetch("https://api.piapi.ai/api/kling/v1/videos/generations", {
@@ -15,7 +17,7 @@ export async function generateVideoWithPiAPI(imageUrl: string): Promise<PiAPIVid
       body: JSON.stringify({
         model: "kling-1.6",
         image: imageUrl,
-        duration: "5",
+        duration: duration.toString(),
         aspect_ratio: "16:9",
         prompt: "Professional product showcase with natural movement and cinematic quality",
         quality: "professional",
@@ -52,7 +54,7 @@ export async function generateVideoWithPiAPI(imageUrl: string): Promise<PiAPIVid
       if (status.status === "completed" && status.output && status.output.length > 0) {
         return {
           url: status.output[0].url,
-          duration: 5,
+          duration,
         };
       }
       

@@ -278,3 +278,154 @@ CRITICAL REQUIREMENTS:
     throw new Error(`Failed to generate image with Gemini: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
+
+// Enhanced Video Prompt Generation for Cinematic AI Video Generation
+export async function enhanceVideoPromptWithGemini(
+  productImagePath: string,
+  sceneMediaPath: string, // Could be image or video path
+  userDescription: string,
+  options: {
+    duration?: number; // 5 or 10 seconds
+    isSceneVideo?: boolean; // true if sceneMediaPath is a video
+  } = {}
+): Promise<{
+  enhancedPrompt: string;
+  cameraMovement?: string;
+  shotList?: string;
+}> {
+  try {
+    console.log("Gemini Video Prompt Enhancement:", {
+      productImagePath,
+      sceneMediaPath,
+      userDescription: userDescription.substring(0, 50),
+      duration: options.duration || 5,
+      isSceneVideo: options.isSceneVideo || false,
+      apiKeyExists: !!process.env.GEMINI_API_KEY
+    });
+
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    // Load product image (always required)
+    console.log("Loading media for video prompt generation...");
+    const productImageData = await getImageDataFromStorage(productImagePath);
+    
+    // For scene, we only process images for now (video analysis comes later)
+    const sceneImageData = options.isSceneVideo ? null : await getImageDataFromStorage(sceneMediaPath);
+
+    const durationSeconds = options.duration || 5;
+    const isShortVideo = durationSeconds <= 5;
+
+    const prompt = `
+You are a PROFESSIONAL CINEMATOGRAPHER and VIDEO PRODUCTION EXPERT creating detailed instructions for AI video generation.
+
+ANALYZE the reference images:
+1. PRODUCT IMAGE: Identify the exact product, its design, materials, proportions, and key features
+2. SCENE ${options.isSceneVideo ? 'VIDEO' : 'IMAGE'}: Understand the environment, lighting mood, existing elements, and spatial layout
+
+TASK: Create a CINEMATIC VIDEO PRODUCTION BRIEF for ${durationSeconds}-second professional video generation with the following structure:
+
+═══ SHOT COMPOSITION & FRAMING ═══
+- Opening frame positioning and product placement
+- Camera angle progression (wide → medium → close-up OR artistic sequence)
+- Rule of thirds and visual balance considerations
+- Depth of field and focus transitions
+
+═══ CAMERA MOVEMENT & DYNAMICS ═══ 
+- Smooth camera movements: ${isShortVideo ? 'subtle pans, gentle zooms, or static with focus pulls' : 'complex movements like dolly shots, orbits, push-ins, or reveal shots'}
+- Movement speed: ${isShortVideo ? 'slow and elegant' : 'varied pacing with dynamic transitions'}
+- Stabilization: professional gimbal-smooth motion
+- Keyframe timing: specify when movements occur (e.g., "0-2s: wide establishing, 2-4s: slow push-in, 4-5s: detail close-up")
+
+═══ LIGHTING & CINEMATOGRAPHY ═══
+- Match existing scene lighting and enhance it cinematically
+- Shadow behavior and light interaction with product
+- Color temperature consistency and mood lighting
+- Highlight product materials and textures with cinematic lighting
+
+═══ VIDEO PRODUCTION TECHNIQUE ═══
+- ${isShortVideo ? 'Single smooth motion or elegant reveal' : 'Multi-beat sequence with rhythm and pacing'}
+- Seamless integration of product into scene environment
+- Professional color grading and contrast
+- High-end commercial video aesthetics
+
+═══ TECHNICAL SPECIFICATIONS ═══
+- Resolution: 4K quality with sharp details
+- Frame rate: smooth 24fps cinematic look
+- Aspect ratio: maintain scene proportions
+- No jump cuts - only smooth continuous motion
+
+USER REQUEST CONTEXT: "${userDescription}"
+
+Generate a SINGLE COMPREHENSIVE VIDEO PROMPT that includes:
+1. Scene setup and product integration commands
+2. Specific camera movement instructions with timing
+3. Lighting and visual enhancement requirements
+4. Professional video production techniques
+
+Focus on creating ${isShortVideo ? 'a single elegant camera move that showcases the product beautifully' : 'a dynamic sequence with multiple camera movements and professional pacing'}.
+
+Write in COMMAND STYLE for AI video generation, using action verbs like "Begin with", "Move camera", "Transition to", "Focus on", "Highlight", "End with".
+`;
+
+    const contentParts = [];
+    
+    // Add product image (always included)
+    contentParts.push({
+      inlineData: {
+        data: productImageData.base64,
+        mimeType: productImageData.mimeType
+      }
+    });
+
+    // Add scene image if available (skip if scene is video for now)
+    if (sceneImageData) {
+      contentParts.push({
+        inlineData: {
+          data: sceneImageData.base64,
+          mimeType: sceneImageData.mimeType
+        }
+      });
+    }
+
+    // Add prompt text last
+    contentParts.push(prompt);
+
+    const result = await model.generateContent(contentParts);
+    const response = await result.response;
+    const enhancedPrompt = response.text();
+    
+    // Extract camera movement suggestions (basic parsing)
+    const cameraMovementMatch = enhancedPrompt.match(/camera[^.]*?(pan|zoom|dolly|orbit|push|pull|tilt|track)[^.]*\./i);
+    const cameraMovement = cameraMovementMatch ? cameraMovementMatch[0] : undefined;
+    
+    // Extract shot progression (basic parsing)  
+    const shotListMatch = enhancedPrompt.match(/(\d+-\d+s:|wide|medium|close|establishing|detail)[^.]*\./gi);
+    const shotList = shotListMatch ? shotListMatch.join(' → ') : undefined;
+    
+    console.log("Enhanced video prompt generated:", {
+      promptLength: enhancedPrompt.length,
+      duration: durationSeconds,
+      cameraMovement: cameraMovement?.substring(0, 100),
+      shotList: shotList?.substring(0, 100)
+    });
+    
+    return {
+      enhancedPrompt,
+      cameraMovement,
+      shotList
+    };
+    
+  } catch (error) {
+    console.error("Gemini Video Prompt Enhancement error:", error);
+    
+    // Fallback cinematic prompt if Gemini fails
+    const duration = options.duration || 5;
+    const fallbackPrompt = `Professional cinematic ${duration}-second video showcasing the product in the scene. Begin with an establishing shot, then smoothly ${duration <= 5 ? 'zoom in to highlight product details' : 'move around the product with dynamic camera work'}, ending with a hero shot. Use smooth camera movements, professional lighting, and commercial video quality. ${userDescription}`;
+    
+    return {
+      enhancedPrompt: fallbackPrompt,
+      cameraMovement: duration <= 5 ? "Smooth zoom-in focus" : "Dynamic orbital movement",
+      shotList: duration <= 5 ? "Wide → Close-up" : "Wide → Medium → Close-up → Hero"
+    };
+  }
+}

@@ -28,13 +28,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { fileType } = req.body;
       
-      // Extract file extension from MIME type
+      // Extract file extension from MIME type (support images and videos)
       const extensionMap: { [key: string]: string } = {
+        // Image types
         'image/jpeg': 'jpg',
         'image/jpg': 'jpg', 
         'image/png': 'png',
         'image/gif': 'gif',
-        'image/webp': 'webp'
+        'image/webp': 'webp',
+        // Video types
+        'video/mp4': 'mp4',
+        'video/webm': 'webm',
+        'video/quicktime': 'mov',
+        'video/x-msvideo': 'avi'
       };
       
       const fileExtension = extensionMap[fileType] || 'jpg';
@@ -564,17 +570,41 @@ async function processProject(projectId: string) {
     // Extract relative paths for Object Storage
     const productImagePath = extractRelativePath(project.productImageUrl || "");
     const sceneImagePath = extractRelativePath(project.sceneImageUrl || "");
+    const sceneVideoPath = extractRelativePath(project.sceneVideoUrl || "");
     
-    console.log("Image paths for Gemini:", { productImagePath, sceneImagePath });
+    console.log("Media paths for Gemini:", { 
+      productImagePath, 
+      sceneImagePath, 
+      sceneVideoPath, 
+      contentType: project.contentType 
+    });
 
-    // Integrate with Gemini AI for prompt enhancement
+    // Use appropriate scene path (prefer video over image for video projects)
+    const scenePath = project.contentType === "video" && sceneVideoPath ? 
+      sceneVideoPath : sceneImagePath;
+    const isSceneVideo = project.contentType === "video" && sceneVideoPath;
+
+    // Integrate with Gemini AI for prompt enhancement (use video-specific enhancement for video projects)
     let enhancedPrompt;
     try {
-      enhancedPrompt = await enhancePromptWithGemini(
-        productImagePath,
-        sceneImagePath,
-        project.description || "CGI image generation"
-      );
+      if (project.contentType === "video") {
+        const { enhanceVideoPromptWithGemini } = require('./services/gemini');
+        enhancedPrompt = await enhanceVideoPromptWithGemini(
+          productImagePath,
+          scenePath,
+          project.description || "CGI video generation",
+          {
+            duration: project.videoDurationSeconds,
+            isSceneVideo
+          }
+        );
+      } else {
+        enhancedPrompt = await enhancePromptWithGemini(
+          productImagePath,
+          scenePath,
+          project.description || "CGI image generation"
+        );
+      }
     } finally {
       // Record cost even if call fails
       totalCostMillicents += COSTS.GEMINI_PROMPT_ENHANCEMENT;
@@ -674,7 +704,8 @@ async function processProject(projectId: string) {
         const { generateVideoWithPiAPI } = require('./services/piapi');
         let videoResult;
         try {
-          videoResult = await generateVideoWithPiAPI(imageResult.url);
+          // Pass the selected video duration from project
+          videoResult = await generateVideoWithPiAPI(imageResult.url, project.videoDurationSeconds);
         } finally {
           // Record cost even if video generation fails
           totalCostMillicents += COSTS.VIDEO_GENERATION;

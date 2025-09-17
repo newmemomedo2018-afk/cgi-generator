@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Download, Eye, Play, Clock, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import VideoPlayerModal from "@/components/video-player-modal";
 import type { Project } from "@shared/schema";
 
 interface ProjectCardProps {
@@ -10,6 +12,7 @@ interface ProjectCardProps {
 }
 
 export default function ProjectCard({ project }: ProjectCardProps) {
+  const [showVideoModal, setShowVideoModal] = useState(false);
   const getStatusBadge = () => {
     switch (project.status) {
       case "pending":
@@ -73,9 +76,10 @@ export default function ProjectCard({ project }: ProjectCardProps) {
   };
 
   const handlePreview = () => {
-    const url = project.contentType === "video" ? project.outputVideoUrl : project.outputImageUrl;
-    if (url) {
-      window.open(url, '_blank');
+    if (project.contentType === "video" && project.outputVideoUrl) {
+      setShowVideoModal(true);
+    } else if (project.outputImageUrl) {
+      window.open(project.outputImageUrl, '_blank');
     }
   };
 
@@ -111,14 +115,23 @@ export default function ProjectCard({ project }: ProjectCardProps) {
               className="w-full h-32 object-cover rounded-lg"
               data-testid={`project-preview-${project.id}`}
             />
-          ) : (
+          ) : project.sceneVideoUrl ? (
+            <video 
+              src={project.sceneVideoUrl} 
+              className="w-full h-32 object-cover rounded-lg opacity-50"
+              data-testid={`project-scene-video-${project.id}`}
+              muted
+              controls={false}
+              preload="metadata"
+            />
+          ) : project.sceneImageUrl ? (
             <img 
               src={project.sceneImageUrl} 
               alt={`مشهد ${project.title}`}
               className="w-full h-32 object-cover rounded-lg opacity-50"
-              data-testid={`project-scene-${project.id}`}
+              data-testid={`project-scene-image-${project.id}`}
             />
-          )}
+          ) : null}
         </div>
 
         {/* Progress Bar for Processing Projects */}
@@ -178,6 +191,16 @@ export default function ProjectCard({ project }: ProjectCardProps) {
           </span>
         </div>
       </CardContent>
+      
+      {/* Video Player Modal for video projects */}
+      {project.contentType === "video" && project.outputVideoUrl && (
+        <VideoPlayerModal
+          isOpen={showVideoModal}
+          onClose={() => setShowVideoModal(false)}
+          videoUrl={project.outputVideoUrl}
+          title={project.title}
+        />
+      )}
     </Card>
   );
 }
