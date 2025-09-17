@@ -23,16 +23,20 @@ async function addAudioToVideo(
 
   // Create audio generation request for video
   const audioRequestPayload = {
-    video_url: videoUrl,
-    prompt: `Add atmospheric background music and realistic sound effects that match the scene. ${prompt.substring(0, 100)}`,
-    duration: "auto" // Automatically match video duration
+    model: "kling",
+    task_type: "kling_sound",
+    input: {
+      video_url: videoUrl,
+      prompt: `Add atmospheric background music and realistic sound effects that match the scene. ${prompt.substring(0, 100)}`,
+      duration: "auto" // Automatically match video duration
+    }
   };
 
-  // Make request to PiAPI Kling Sound endpoint
-  const response = await fetch('https://api.piapi.ai/kling/sound', {
+  // Make request to PiAPI v1 endpoint
+  const response = await fetch('https://api.piapi.ai/api/v1/task', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${klingApiKey}`,
+      'X-API-Key': klingApiKey,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(audioRequestPayload)
@@ -65,10 +69,10 @@ async function addAudioToVideo(
 
     console.log(`Checking Kling Sound status, attempt ${attempts}/${maxAttempts}...`);
 
-    // Check task status
-    const statusResponse = await fetch(`https://api.piapi.ai/kling/task/${taskId}`, {
+    // Check task status using PiAPI v1 endpoint
+    const statusResponse = await fetch(`https://api.piapi.ai/api/v1/task/${taskId}`, {
       headers: {
-        'Authorization': `Bearer ${klingApiKey}`,
+        'X-API-Key': klingApiKey,
       }
     });
 
@@ -86,11 +90,9 @@ async function addAudioToVideo(
     if (statusResult.status === 'completed' || statusResult.status === 'success') {
       console.log("Kling Sound generation completed!");
       
-      // Get the video with audio URL from multiple possible response formats
-      const videoWithAudioUrl = statusResult.output?.video_url || 
-                                statusResult.result?.video_url || 
-                                statusResult.video_url ||
-                                statusResult.output?.result?.video_url;
+      // Get the video with audio URL from PiAPI v1 format
+      const videos = statusResult.output?.videos || [];
+      const videoWithAudioUrl = videos.find((v: any) => !v.watermarked)?.resource || videos[0]?.resource;
       
       if (!videoWithAudioUrl) {
         console.error("No video URL found in audio completion result:", statusResult);
@@ -153,30 +155,34 @@ export async function generateVideoWithKling(
       throw new Error("KLING_API_KEY environment variable is required");
     }
 
-    // Create Kling AI image-to-video request
+    // Create Kling AI image-to-video request (PiAPI v1 format)
     const requestPayload = {
-      model: "kling-v2.0", // Latest Kling model
-      prompt: prompt,
-      image: `data:image/jpeg;base64,${imageBase64}`,
-      duration: `${durationSeconds}s`,
-      aspect_ratio: "16:9",
-      mode: "standard", // or "pro" for higher quality
-      cfg_scale: 7.0, // Creativity vs adherence balance
-      seed: Math.floor(Math.random() * 1000000) // Random seed for variety
+      model: "kling",
+      task_type: "video_generation",
+      input: {
+        prompt: prompt,
+        image_url: `data:image/jpeg;base64,${imageBase64}`,
+        duration: durationSeconds,
+        aspect_ratio: "16:9",
+        mode: "std", // std or pro
+        cfg_scale: 0.5, // 0.1 to 1.0
+        negative_prompt: ""
+      }
     };
 
     console.log("Sending request to Kling AI...", {
       model: requestPayload.model,
-      duration: requestPayload.duration,
-      aspectRatio: requestPayload.aspect_ratio,
+      task_type: requestPayload.task_type,
+      duration: requestPayload.input.duration,
+      aspectRatio: requestPayload.input.aspect_ratio,
       promptLength: prompt.length
     });
 
-    // Make request to PiAPI Kling endpoint
-    const response = await fetch('https://api.piapi.ai/kling/image2video', {
+    // Make request to PiAPI v1 endpoint
+    const response = await fetch('https://api.piapi.ai/api/v1/task', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${klingApiKey}`,
+        'X-API-Key': klingApiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestPayload)
@@ -211,10 +217,10 @@ export async function generateVideoWithKling(
 
       console.log(`Checking Kling AI status, attempt ${attempts}/${maxAttempts}...`);
 
-      // Check task status
-      const statusResponse = await fetch(`https://api.piapi.ai/kling/task/${taskId}`, {
+      // Check task status using PiAPI v1 endpoint
+      const statusResponse = await fetch(`https://api.piapi.ai/api/v1/task/${taskId}`, {
         headers: {
-          'Authorization': `Bearer ${klingApiKey}`,
+          'X-API-Key': klingApiKey,
         }
       });
 
@@ -232,7 +238,9 @@ export async function generateVideoWithKling(
       if (statusResult.status === 'completed' || statusResult.status === 'success') {
         console.log("Kling AI video generation completed!");
         
-        const videoUrl = statusResult.output?.video_url || statusResult.result?.video_url || statusResult.video_url;
+        // PiAPI v1 format: look in output.videos array for non-watermarked version
+        const videos = statusResult.output?.videos || [];
+        const videoUrl = videos.find((v: any) => !v.watermarked)?.resource || videos[0]?.resource;
         
         if (!videoUrl) {
           console.error("No video URL found in completed result:", statusResult);
