@@ -25,42 +25,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
 
-  // Simple file upload endpoint using multer
-  // Configure multer for file uploads
-  const multerStorage = multer.diskStorage({
-    destination: (req: any, file: any, cb: any) => {
-      const uploadDir = '/tmp/uploads';
-      if (!existsSync(uploadDir)) {
-        mkdirSync(uploadDir, { recursive: true });
-      }
-      cb(null, uploadDir);
+  // Configure multer for memory storage (Object Storage upload)
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB limit
     },
-    filename: (req: any, file: any, cb: any) => {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      cb(null, 'product-' + uniqueSuffix + path.extname(file.originalname));
+    fileFilter: (req: any, file: any, cb: any) => {
+      // Only allow image files
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only image files are allowed'));
+      }
     }
   });
   
-  const upload = multer({ storage: multerStorage });
-  
-  // Upload endpoint for product images
+  // Upload endpoint for product images - now uses Object Storage
   app.post('/api/upload-product-image', isAuthenticated, upload.single('productImage'), async (req: any, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
       }
       
+      const userId = req.user.id;
+      const objectStorageService = new ObjectStorageService();
+      
+      // Upload file to Object Storage
+      const objectStoragePath = await objectStorageService.uploadToPublicStorage(
+        req.file.buffer,
+        req.file.originalname,
+        userId,
+        req.file.mimetype
+      );
+      
+      // Generate public URL for display purposes
       const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const imageUrl = `${baseUrl}/api/files/uploads/${req.file.filename}`;
+      const imageUrl = `${baseUrl}/public-objects/${objectStoragePath}`;
+      
+      console.log("File uploaded to Object Storage:", {
+        originalName: req.file.originalname,
+        objectStoragePath,
+        imageUrl,
+        fileSize: req.file.buffer.length
+      });
       
       res.json({ 
         url: imageUrl,
         imageUrl,
-        filename: req.file.filename
+        objectStoragePath, // This is what Gemini will use
+        filename: objectStoragePath.split('/').pop() // Extract just the filename
       });
     } catch (error) {
-      console.error("Error uploading file:", error);
-      res.status(500).json({ error: "Failed to upload file" });
+      console.error("Error uploading file to Object Storage:", error);
+      res.status(500).json({ error: "Failed to upload file to Object Storage" });
     }
   });
 

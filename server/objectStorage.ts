@@ -261,6 +261,63 @@ export class ObjectStorageService {
     }
     return objectFile;
   }
+
+  // Upload file to public storage and return path compatible with getImageDataFromStorage
+  async uploadToPublicStorage(
+    fileBuffer: Buffer, 
+    originalFilename: string, 
+    userId: string,
+    contentType: string = 'image/jpeg'
+  ): Promise<string> {
+    try {
+      const publicSearchPaths = this.getPublicObjectSearchPaths();
+      if (publicSearchPaths.length === 0) {
+        throw new Error("No public search paths configured");
+      }
+
+      // Use the first public search path for uploads
+      const publicDir = publicSearchPaths[0];
+      const timestamp = Date.now();
+      const uuid = randomUUID().slice(0, 8);
+      const fileExtension = originalFilename.split('.').pop() || 'jpg';
+      const filename = `uploads/${userId}/${timestamp}-${uuid}.${fileExtension}`;
+      const fullPath = `${publicDir}/${filename}`;
+
+      console.log("Uploading file to Object Storage:", {
+        originalFilename,
+        fullPath,
+        contentType,
+        bufferSize: fileBuffer.length
+      });
+
+      const { bucketName, objectName } = parseObjectPath(fullPath);
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectName);
+
+      // Upload the file buffer
+      await file.save(fileBuffer, {
+        metadata: {
+          contentType: contentType,
+          cacheControl: 'public, max-age=3600',
+        },
+        public: true, // Make file publicly accessible for AI services
+        resumable: false, // Use simple upload for small files
+      });
+
+      console.log("File uploaded successfully to Object Storage:", {
+        bucketName,
+        objectName,
+        returnPath: filename
+      });
+
+      // Return the relative path that works with searchPublicObject()
+      // This path will be searched in public directories by getImageDataFromStorage()
+      return filename;
+    } catch (error) {
+      console.error("Error uploading file to Object Storage:", error);
+      throw new Error(`Failed to upload file to Object Storage: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
 }
 
 function parseObjectPath(path: string): {
