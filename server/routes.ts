@@ -591,10 +591,16 @@ async function processProject(projectId: string) {
   let totalCostMillicents = 0; // Track actual API costs in millicents (1/1000 USD)
   
   try {
-    console.log(`Starting CGI processing for project ${projectId}`);
+    console.log(`🚀 Starting CGI processing for project ${projectId}`);
     
-    // Get project details
+    // Get project details for debugging
     const project = await storage.getProject(projectId);
+    console.log(`🔍 Project details:`, {
+      id: projectId,
+      contentType: project?.contentType,
+      status: project?.status,
+      title: project?.title
+    });
     if (!project) {
       throw new Error("Project not found");
     }
@@ -782,7 +788,9 @@ async function processProject(projectId: string) {
 
       try {
         // Integrate with Kling AI for video generation
+        console.log("🎬 Attempting to import kling-video service...");
         const { generateVideoWithKling } = await import('./services/kling-video');
+        console.log("🎬 kling-video service imported successfully:", typeof generateVideoWithKling);
         let videoResult;
         try {
           console.log("🎬 Calling generateVideoWithKling with:", {
