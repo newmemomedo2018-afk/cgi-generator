@@ -9,6 +9,7 @@ import { promises as fs, createReadStream, existsSync } from 'fs';
 import path from 'path';
 import { enhancePromptWithGemini, generateImageWithGemini } from './services/gemini';
 import { ObjectStorageService, ObjectNotFoundError } from './objectStorage';
+import multer from 'multer';
 
 // AI Service Costs (in millicents USD - 1/1000 USD)
 const COSTS = {
@@ -23,15 +24,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
 
-  // Get upload URL endpoint for product images
-  app.post('/api/objects/upload', isAuthenticated, async (req: any, res) => {
+  // Simple file upload endpoint using multer
+  // Configure multer for file uploads
+  const multerStorage = multer.diskStorage({
+    destination: (req: any, file: any, cb: any) => {
+      const uploadDir = '/tmp/uploads';
+      if (!existsSync(uploadDir)) {
+        require('fs').mkdirSync(uploadDir, { recursive: true });
+      }
+      cb(null, uploadDir);
+    },
+    filename: (req: any, file: any, cb: any) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, 'product-' + uniqueSuffix + path.extname(file.originalname));
+    }
+  });
+  
+  const upload = multer({ storage: multerStorage });
+  
+  // Upload endpoint for product images
+  app.post('/api/upload-product-image', isAuthenticated, upload.single('productImage'), async (req: any, res) => {
     try {
-      const objectStorageService = new ObjectStorageService();
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      res.json({ uploadURL });
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+      
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const imageUrl = `${baseUrl}/api/files/${req.user.id}/${req.file.filename}`;
+      
+      res.json({ 
+        imageUrl,
+        filename: req.file.filename
+      });
     } catch (error) {
-      console.error("Error getting upload URL:", error);
-      res.status(500).json({ message: "Failed to get upload URL" });
+      console.error("Error uploading file:", error);
+      res.status(500).json({ error: "Failed to upload file" });
     }
   });
 

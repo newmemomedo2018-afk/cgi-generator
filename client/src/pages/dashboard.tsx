@@ -97,29 +97,25 @@ export default function Dashboard() {
 
   const uploadProductImageMutation = useMutation({
     mutationFn: async (file: File) => {
-      // Step 1: Get presigned URL for upload
-      const urlResponse = await apiRequest("POST", "/api/objects/upload", {});
-      const { uploadURL } = await urlResponse.json();
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('productImage', file);
       
-      // Step 2: Upload directly to object storage
-      const uploadResponse = await fetch(uploadURL, {
-        method: 'PUT',
-        body: file,
+      // Upload the file directly using FormData
+      const response = await fetch('/api/upload-product-image', {
+        method: 'POST',
+        body: formData,
         headers: {
-          'Content-Type': file.type,
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
       });
       
-      if (!uploadResponse.ok) {
-        throw new Error('Failed to upload file to storage');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload image');
       }
       
-      // Step 3: Get the public URL for the uploaded image
-      const confirmResponse = await apiRequest("PUT", "/api/product-images", {
-        productImageURL: uploadURL
-      });
-      
-      return confirmResponse.json();
+      return response.json();
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {
@@ -144,29 +140,25 @@ export default function Dashboard() {
   // Combined scene upload mutation for both image and video
   const uploadSceneMutation = useMutation({
     mutationFn: async (file: File) => {
-      // Step 1: Get presigned URL for upload
-      const urlResponse = await apiRequest("POST", "/api/objects/upload", {});
-      const { uploadURL } = await urlResponse.json();
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('productImage', file);
       
-      // Step 2: Upload directly to object storage
-      const uploadResponse = await fetch(uploadURL, {
-        method: 'PUT',
-        body: file,
+      // Upload the file directly using FormData
+      const response = await fetch('/api/upload-product-image', {
+        method: 'POST',
+        body: formData,
         headers: {
-          'Content-Type': file.type,
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
       });
       
-      if (!uploadResponse.ok) {
-        throw new Error('Failed to upload file to storage');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload image');
       }
       
-      // Step 3: Get the public URL for the uploaded file
-      const confirmResponse = await apiRequest("PUT", "/api/product-images", {
-        productImageURL: uploadURL
-      });
-      
-      return confirmResponse.json();
+      return response.json();
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {
