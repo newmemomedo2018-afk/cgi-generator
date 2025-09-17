@@ -419,55 +419,32 @@ export async function enhanceVideoPromptWithGemini(
     const isShortVideo = durationSeconds <= 5;
 
     const prompt = `
-You are a PROFESSIONAL CINEMATOGRAPHER and VIDEO PRODUCTION EXPERT creating detailed instructions for AI video generation.
+Create professional ${durationSeconds}-second CGI video instructions.
 
-ANALYZE the reference images:
-1. PRODUCT IMAGE: Identify the exact product, its design, materials, proportions, and key features
-2. SCENE ${options.isSceneVideo ? 'VIDEO' : 'IMAGE'}: Understand the environment, lighting mood, existing elements, and spatial layout
+ANALYZE the images:
+1. PRODUCT: Identify key features and design
+2. SCENE: Environment, lighting, layout
 
-TASK: Create a CINEMATIC VIDEO PRODUCTION BRIEF for ${durationSeconds}-second professional video generation with the following structure:
+GENERATE video brief with:
 
-═══ SHOT COMPOSITION & FRAMING ═══
-- Opening frame positioning and product placement
-- Camera angle progression (wide → medium → close-up OR artistic sequence)
-- Rule of thirds and visual balance considerations
-- Depth of field and focus transitions
+🎬 CAMERA MOVEMENT:
+${isShortVideo ? 'Smooth pan/zoom movement' : 'Dynamic camera sequence'}
+- Timing: specify 0-${durationSeconds}s progression
+- Professional gimbal-smooth motion
 
-═══ CAMERA MOVEMENT & DYNAMICS ═══ 
-- Smooth camera movements: ${isShortVideo ? 'subtle pans, gentle zooms, or static with focus pulls' : 'complex movements like dolly shots, orbits, push-ins, or reveal shots'}
-- Movement speed: ${isShortVideo ? 'slow and elegant' : 'varied pacing with dynamic transitions'}
-- Stabilization: professional gimbal-smooth motion
-- Keyframe timing: specify when movements occur (e.g., "0-2s: wide establishing, 2-4s: slow push-in, 4-5s: detail close-up")
+🎨 CINEMATOGRAPHY:
+- Match scene lighting cinematically  
+- Highlight product materials
+- Professional color grading
 
-═══ LIGHTING & CINEMATOGRAPHY ═══
-- Match existing scene lighting and enhance it cinematically
-- Shadow behavior and light interaction with product
-- Color temperature consistency and mood lighting
-- Highlight product materials and textures with cinematic lighting
+📋 TECHNIQUE:
+- Seamless product integration
+- High-end commercial aesthetics
+- 4K quality, smooth motion
 
-═══ VIDEO PRODUCTION TECHNIQUE ═══
-- ${isShortVideo ? 'Single smooth motion or elegant reveal' : 'Multi-beat sequence with rhythm and pacing'}
-- Seamless integration of product into scene environment
-- Professional color grading and contrast
-- High-end commercial video aesthetics
+USER REQUEST: "${userDescription}"
 
-═══ TECHNICAL SPECIFICATIONS ═══
-- Resolution: 4K quality with sharp details
-- Frame rate: smooth 24fps cinematic look
-- Aspect ratio: maintain scene proportions
-- No jump cuts - only smooth continuous motion
-
-USER REQUEST CONTEXT: "${userDescription}"
-
-Generate a SINGLE COMPREHENSIVE VIDEO PROMPT that includes:
-1. Scene setup and product integration commands
-2. Specific camera movement instructions with timing
-3. Lighting and visual enhancement requirements
-4. Professional video production techniques
-
-Focus on creating ${isShortVideo ? 'a single elegant camera move that showcases the product beautifully' : 'a dynamic sequence with multiple camera movements and professional pacing'}.
-
-Write in COMMAND STYLE for AI video generation, using action verbs like "Begin with", "Move camera", "Transition to", "Focus on", "Highlight", "End with".
+Write concise AI video commands using action verbs: "Begin with", "Move camera", "Focus on", "End with".
 `;
 
     const contentParts = [];
