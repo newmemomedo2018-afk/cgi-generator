@@ -10,32 +10,99 @@ const objectStorage = new ObjectStorageService();
 // Function to get image from Object Storage with correct MIME type detection
 async function getImageDataFromStorage(filePath: string): Promise<{base64: string; mimeType: string}> {
   try {
-    console.log("Getting image from Object Storage:", filePath);
+    console.log("Getting image from storage:", filePath);
     
-    // Try to find the file as a public object first
-    let file = await objectStorage.searchPublicObject(filePath);
+    // Check if it's a URL (from local file system) or relative path
+    let filename = null;
     
-    if (!file) {
-      // If not found, try to get it from the object path directly
-      console.log("File not found in public search, trying direct object path");
-      file = await objectStorage.getObjectFile(filePath);
+    if (filePath.startsWith('http')) {
+      // Extract filename from URL path like /api/files/uploads/filename.jpg
+      const urlPath = new URL(filePath).pathname;
+      const match = urlPath.match(/\/api\/files\/uploads\/(.+)/);
+      if (match) {
+        filename = match[1];
+      }
+    } else if (filePath.includes('/api/files/uploads/')) {
+      // Handle relative paths like /api/files/uploads/filename.jpg
+      const match = filePath.match(/\/api\/files\/uploads\/(.+)/);
+      if (match) {
+        filename = match[1];
+      }
+    } else if (filePath.startsWith('product-')) {
+      // Handle bare filenames like product-1234567890-123456789.jpg
+      filename = filePath;
     }
     
-    // Get file metadata to determine actual MIME type
-    const [metadata] = await file.getMetadata();
-    const mimeType = metadata.contentType || "image/jpeg"; // Fallback to JPEG if unknown
+    if (filename) {
+      const localPath = `/tmp/uploads/${filename}`;
+      
+      console.log("Reading local file:", localPath);
+      
+      // Import fs/promises and path
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      
+      try {
+        // Check if file exists
+        await fs.access(localPath);
+        
+        // Read file and determine MIME type
+        const buffer = await fs.readFile(localPath);
+        const ext = path.extname(filename).toLowerCase();
+        
+        const mimeTypes: { [key: string]: string } = {
+          '.jpg': 'image/jpeg',
+          '.jpeg': 'image/jpeg',
+          '.png': 'image/png',
+          '.gif': 'image/gif',
+          '.webp': 'image/webp'
+        };
+        
+        const mimeType = mimeTypes[ext] || 'image/jpeg';
+        const base64 = buffer.toString('base64');
+        
+        console.log("Image loaded from local file:", {
+          filePath: localPath,
+          bufferLength: buffer.length,
+          base64Length: base64.length,
+          mimeType,
+          fileName: filename
+        });
+        
+        return { base64, mimeType };
+      } catch (fileError) {
+        console.error("Error reading local file:", fileError);
+        throw new Error(`File not found: ${localPath}`);
+      }
+    }
     
-    const buffer = await objectStorage.getFileBuffer(file);
-    const base64 = buffer.toString('base64');
-    
-    console.log("Image loaded from storage:", {
-      bufferLength: buffer.length,
-      base64Length: base64.length,
-      mimeType,
-      fileName: metadata.name
-    });
-    
-    return { base64, mimeType };
+    // Fallback: try Object Storage for backwards compatibility
+    try {
+      let file = await objectStorage.searchPublicObject(filePath);
+      
+      if (!file) {
+        console.log("File not found in public search, trying direct object path");
+        file = await objectStorage.getObjectFile(filePath);
+      }
+      
+      const [metadata] = await file.getMetadata();
+      const mimeType = metadata.contentType || "image/jpeg";
+      
+      const buffer = await objectStorage.getFileBuffer(file);
+      const base64 = buffer.toString('base64');
+      
+      console.log("Image loaded from Object Storage:", {
+        bufferLength: buffer.length,
+        base64Length: base64.length,
+        mimeType,
+        fileName: metadata.name
+      });
+      
+      return { base64, mimeType };
+    } catch (objectStorageError) {
+      console.error("Failed to load from both local and Object Storage:", objectStorageError);
+      throw new Error(`Could not load image from: ${filePath}`);
+    }
   } catch (error) {
     console.error("Error getting image from storage:", error);
     throw error;

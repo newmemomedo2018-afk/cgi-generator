@@ -25,9 +25,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
 
-  // Configure multer for memory storage (Object Storage upload)
+  // Configure multer for local file storage (fallback while Object Storage has issues)
+  const multerStorage = multer.diskStorage({
+    destination: (req: any, file: any, cb: any) => {
+      const uploadDir = '/tmp/uploads';
+      if (!existsSync(uploadDir)) {
+        mkdirSync(uploadDir, { recursive: true });
+      }
+      cb(null, uploadDir);
+    },
+    filename: (req: any, file: any, cb: any) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, 'product-' + uniqueSuffix + path.extname(file.originalname));
+    }
+  });
+  
   const upload = multer({
-    storage: multer.memoryStorage(),
+    storage: multerStorage,
     limits: {
       fileSize: 10 * 1024 * 1024, // 10MB limit
     },
@@ -41,44 +55,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Upload endpoint for product images - now uses Object Storage
+  // Upload endpoint for product images - using local storage temporarily
   app.post('/api/upload-product-image', isAuthenticated, upload.single('productImage'), async (req: any, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
       }
       
-      const userId = req.user.id;
-      const objectStorageService = new ObjectStorageService();
-      
-      // Upload file to Object Storage
-      const objectStoragePath = await objectStorageService.uploadToPublicStorage(
-        req.file.buffer,
-        req.file.originalname,
-        userId,
-        req.file.mimetype
-      );
-      
-      // Generate public URL for display purposes
       const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const imageUrl = `${baseUrl}/public-objects/${objectStoragePath}`;
+      const imageUrl = `${baseUrl}/api/files/uploads/${req.file.filename}`;
       
-      console.log("File uploaded to Object Storage:", {
+      console.log("File uploaded locally:", {
         originalName: req.file.originalname,
-        objectStoragePath,
+        filename: req.file.filename,
         imageUrl,
-        fileSize: req.file.buffer.length
+        fileSize: req.file.size
       });
       
       res.json({ 
         url: imageUrl,
         imageUrl,
-        objectStoragePath, // This is what Gemini will use
-        filename: objectStoragePath.split('/').pop() // Extract just the filename
+        filename: req.file.filename
       });
     } catch (error) {
-      console.error("Error uploading file to Object Storage:", error);
-      res.status(500).json({ error: "Failed to upload file to Object Storage" });
+      console.error("Error uploading file:", error);
+      res.status(500).json({ error: "Failed to upload file" });
     }
   });
 
