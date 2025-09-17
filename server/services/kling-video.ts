@@ -91,8 +91,9 @@ async function addAudioToVideo(
       console.log("Kling Sound generation completed!");
       
       // Get the video with audio URL from PiAPI v1 format
-      const videos = statusResult.output?.videos || [];
-      const videoWithAudioUrl = videos.find((v: any) => !v.watermarked)?.resource || videos[0]?.resource;
+      const videoWithAudioUrl = statusResult.output?.video_url || 
+                               statusResult.output?.works?.[0]?.video?.resource_without_watermark ||
+                               statusResult.output?.works?.[0]?.video?.resource;
       
       if (!videoWithAudioUrl) {
         console.error("No video URL found in audio completion result:", statusResult);
@@ -238,9 +239,10 @@ export async function generateVideoWithKling(
       if (statusResult.status === 'completed' || statusResult.status === 'success') {
         console.log("Kling AI video generation completed!");
         
-        // PiAPI v1 format: look in output.videos array for non-watermarked version
-        const videos = statusResult.output?.videos || [];
-        const videoUrl = videos.find((v: any) => !v.watermarked)?.resource || videos[0]?.resource;
+        // PiAPI v1 format: get video URL from multiple possible locations
+        const videoUrl = statusResult.output?.video_url || 
+                        statusResult.output?.works?.[0]?.video?.resource_without_watermark ||
+                        statusResult.output?.works?.[0]?.video?.resource;
         
         if (!videoUrl) {
           console.error("No video URL found in completed result:", statusResult);
