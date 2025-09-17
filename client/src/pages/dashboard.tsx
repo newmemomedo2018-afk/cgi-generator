@@ -116,7 +116,7 @@ export default function Dashboard() {
       
       // Step 3: Get the public URL for the uploaded image
       const confirmResponse = await apiRequest("PUT", "/api/product-images", {
-        productImageURL: uploadResponse.url
+        productImageURL: uploadURL
       });
       
       return confirmResponse.json();
@@ -163,7 +163,7 @@ export default function Dashboard() {
       
       // Step 3: Get the public URL for the uploaded file
       const confirmResponse = await apiRequest("PUT", "/api/product-images", {
-        productImageURL: uploadResponse.url
+        productImageURL: uploadURL
       });
       
       return confirmResponse.json();
