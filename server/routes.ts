@@ -124,8 +124,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // File serving endpoint - SECURED with authentication and path validation
-  app.get('/api/files/*', isAuthenticated, async (req: any, res) => {
+  // File serving endpoint - Public access for generated content
+  app.get('/api/files/*', async (req: any, res) => {
     try {
       const filename = req.params['0'] as string;
       // Using imported fs and path modules
