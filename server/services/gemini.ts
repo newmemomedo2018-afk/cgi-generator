@@ -168,22 +168,30 @@ ANALYZE the two reference images:
 2. SCENE IMAGE: Note existing objects to be replaced, lighting conditions, environment, perspective
 
 Your task: Create DIRECT COMMANDS for the AI image generator to:
-1. REMOVE/REPLACE any existing products in the scene completely
+1. REMOVE/REPLACE ONLY the specific existing products in the scene completely
 2. INSERT the exact product from the first image 
 3. Match lighting, shadows, and perspective perfectly
+4. PRESERVE ALL architectural elements (ceiling, walls, floor) unchanged
+
+CRITICAL PRESERVATION RULES:
+- PRESERVE THE CEILING 100% unchanged (do not modify ceiling color, texture, height, or any ceiling elements)
+- PRESERVE ALL WALLS 100% unchanged (do not modify wall materials, colors, textures, or structural elements)
+- PRESERVE THE FLOOR 100% unchanged (do not modify flooring materials, patterns, or colors)
+- PRESERVE ALL EXISTING FURNITURE 100% unchanged except for the specific item being replaced
 
 Generate a COMMAND-STYLE prompt like this example:
-"Remove the [existing object] completely from the scene and replace it with the [exact product name] from the reference image. The [product] should appear ultra-realistic in CGI style, [size description], positioned [placement details]. Make sure the lighting and shadows match the [lighting description]. Keep the [background elements] visible. The [product] should have [texture/material details], and look [style description]. Render in high resolution with cinematic composition and sharp details."
+"Remove ONLY the [existing object] completely from the scene and replace it with the [exact product name] from the reference image. The [product] should appear ultra-realistic in CGI style, [size description], positioned [placement details]. Make sure the lighting and shadows match the [lighting description]. Keep ALL other elements including ceiling, walls, floor, and furniture completely unchanged. The [product] should have [texture/material details], and look [style description]. Render in high resolution with cinematic composition and sharp details."
 
 User Request: ${userDescription}
 
 BE SPECIFIC about:
-- What to REMOVE from the scene
+- What SPECIFIC object to REMOVE from the scene (be precise - only that object)
 - What EXACT product to INSERT  
 - HOW it should look and be positioned
 - Lighting and shadow matching requirements
+- WHAT TO PRESERVE (ceiling, walls, floor, other furniture)
 
-Write DIRECT COMMANDS in English for the AI image generator. Use action verbs like "Remove", "Replace", "Position", "Make sure", "Keep", "Render".
+Write DIRECT COMMANDS in English for the AI image generator. Use action verbs like "Remove ONLY", "Replace", "Position", "Make sure", "Keep unchanged", "Preserve", "Render".
 `;
 
     const result = await model.generateContent([

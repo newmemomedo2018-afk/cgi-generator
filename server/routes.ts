@@ -772,15 +772,15 @@ async function processProject(projectId: string) {
       });
 
       try {
-        // Integrate with Google Gemini Veo 3 for video generation
-        const { generateVideoWithGemini } = await import('./services/gemini-video');
+        // Integrate with Kling AI for video generation
+        const { generateVideoWithKling } = await import('./services/kling-video');
         let videoResult;
         try {
           // Use the enhanced prompt and selected video duration
-          videoResult = await generateVideoWithGemini(
+          videoResult = await generateVideoWithKling(
             imageResult.url, 
             enhancedPrompt, 
-            project.videoDurationSeconds || undefined
+            project.videoDurationSeconds || 10
           );
         } finally {
           // Record cost even if video generation fails
