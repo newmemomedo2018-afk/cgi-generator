@@ -767,7 +767,14 @@ async function processProject(projectId: string) {
     });
 
     // Step 3: Generate video if requested
+    console.log("🎬 Checking video generation condition:", {
+      projectId,
+      contentType: project.contentType,
+      shouldGenerateVideo: project.contentType === "video"
+    });
+    
     if (project.contentType === "video") {
+      console.log("🎬 Starting video generation for project:", projectId);
       await storage.updateProject(projectId, { 
         status: "generating_video", 
         progress: 80 
@@ -778,6 +785,13 @@ async function processProject(projectId: string) {
         const { generateVideoWithKling } = await import('./services/kling-video');
         let videoResult;
         try {
+          console.log("🎬 Calling generateVideoWithKling with:", {
+            imageUrl: imageResult.url,
+            promptLength: enhancedPrompt.length,
+            duration: project.videoDurationSeconds || 10,
+            includeAudio: project.includeAudio || false
+          });
+          
           // Use the enhanced prompt and selected video duration
           videoResult = await generateVideoWithKling(
             imageResult.url, 
@@ -785,6 +799,12 @@ async function processProject(projectId: string) {
             project.videoDurationSeconds || 10,
             project.includeAudio || false
           );
+          
+          console.log("🎬 generateVideoWithKling returned:", {
+            success: !!videoResult,
+            hasUrl: !!videoResult?.url,
+            videoUrl: videoResult?.url?.substring(0, 50) + "..."
+          });
           
           // Only update video URL if generation succeeded
           await storage.updateProject(projectId, { 
