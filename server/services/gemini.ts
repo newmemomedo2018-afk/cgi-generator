@@ -532,3 +532,190 @@ Write in COMMAND STYLE for AI video generation, using action verbs like "Begin w
     };
   }
 }
+
+// Enhanced Video Prompt From Generated Image - NEW FUNCTION
+export async function enhanceVideoPromptFromGeneratedImage(
+  generatedImageData: {base64: string; mimeType: string},
+  projectDetails: {
+    duration: number; // 5 or 10 seconds
+    includeAudio: boolean;
+    userDescription: string;
+    productName?: string;
+  }
+): Promise<{
+  enhancedVideoPrompt: string;
+  audioPrompt?: string;
+  cameraMovements: string;
+  cinematicDirection: string;
+}> {
+  try {
+    console.log("🎬 Gemini Video Enhancement from Generated Image:", {
+      imageSize: generatedImageData.base64.length,
+      mimeType: generatedImageData.mimeType,
+      duration: projectDetails.duration,
+      includeAudio: projectDetails.includeAudio,
+      userDescription: projectDetails.userDescription.substring(0, 50) + "..."
+    });
+
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const durationSeconds = projectDetails.duration;
+    const isShortVideo = durationSeconds <= 5;
+
+    const prompt = `
+🎬 PROFESSIONAL CGI VIDEO DIRECTOR ANALYSIS
+
+ANALYZE this completed CGI image composition and provide EXPERT video production guidance:
+
+📋 PROJECT SPECIFICATIONS:
+- Duration: ${durationSeconds} seconds (${isShortVideo ? 'SHORT' : 'MEDIUM'} format)
+- Audio Required: ${projectDetails.includeAudio ? 'YES' : 'NO'}
+- User Vision: ${projectDetails.userDescription}
+- Product Focus: ${projectDetails.productName || 'Main product in scene'}
+
+🎯 YOUR MISSION - Create PROFESSIONAL video production instructions:
+
+1. 📹 CAMERA MOVEMENT ANALYSIS:
+   - Study the composition, lighting, and spatial relationships
+   - Determine the MOST CINEMATIC camera movements for this specific scene
+   - Consider: dolly, pan, tilt, zoom, orbit, push-in, pull-out, slider movements
+   - Match movement to the ${durationSeconds}-second timeframe
+
+2. 🎭 CINEMATIC DIRECTION:
+   - Analyze the scene's mood, atmosphere, and visual weight
+   - Suggest the most compelling visual narrative flow
+   - Define key moments and transitions within ${durationSeconds} seconds
+   - Consider product showcase timing and emphasis points
+
+${projectDetails.includeAudio ? `
+3. 🔊 NATURAL AUDIO DESIGN:
+   - Analyze the environment and suggest realistic ambient sounds
+   - Consider material-specific sounds (metal, wood, fabric, etc.)
+   - Suggest atmospheric audio that enhances the scene's reality
+   - Include subtle sound effects that match any suggested movements
+` : ''}
+
+OUTPUT REQUIREMENTS:
+Create THREE separate sections:
+
+📹 CAMERA_MOVEMENTS:
+"[Specific technical directions for camera animation - be precise about timing, speed, and trajectory]"
+
+🎭 CINEMATIC_DIRECTION:
+"[Detailed visual narrative and scene progression for the ${durationSeconds}-second video]"
+
+${projectDetails.includeAudio ? `
+🔊 AUDIO_PROMPT:
+"[Natural, environmental audio description that matches the scene and any movements - be specific about sound types, intensity, and timing]"
+` : ''}
+
+CRITICAL GUIDELINES:
+- Base ALL suggestions on the actual visual content of this specific image
+- Prioritize REALISTIC, achievable movements over complex cinematography
+- Ensure ${durationSeconds}-second timing is perfectly structured
+- Focus on showcasing the product naturally within the scene
+- Maintain the established lighting and mood throughout
+- Suggest movements that enhance, not distract from, the composition
+
+Be SPECIFIC and ACTIONABLE - these instructions go directly to AI video generation.
+`;
+
+    console.log("🤖 Sending analysis request to Gemini...");
+
+    const result = await model.generateContent([
+      {
+        inlineData: {
+          data: generatedImageData.base64,
+          mimeType: generatedImageData.mimeType
+        }
+      },
+      prompt
+    ]);
+
+    const response = await result.response;
+    const text = response.text();
+
+    console.log("✅ Gemini video analysis complete:", {
+      responseLength: text.length,
+      containsCameraMovements: text.includes('CAMERA_MOVEMENTS'),
+      containsCinematicDirection: text.includes('CINEMATIC_DIRECTION'),
+      containsAudioPrompt: text.includes('AUDIO_PROMPT')
+    });
+
+    // Parse the structured response
+    const cameraMovementsMatch = text.match(/CAMERA_MOVEMENTS:\s*"([^"]+)"/);
+    const cinematicDirectionMatch = text.match(/CINEMATIC_DIRECTION:\s*"([^"]+)"/);
+    const audioPromptMatch = text.match(/AUDIO_PROMPT:\s*"([^"]+)"/);
+
+    const cameraMovements = cameraMovementsMatch ? cameraMovementsMatch[1] : 
+      `Smooth ${durationSeconds}-second camera movement showcasing the product with cinematic flow`;
+    
+    const cinematicDirection = cinematicDirectionMatch ? cinematicDirectionMatch[1] : 
+      `Professional ${durationSeconds}-second product showcase with dynamic visual progression`;
+    
+    const audioPrompt = audioPromptMatch ? audioPromptMatch[1] : undefined;
+
+    // Create the enhanced video prompt for Kling AI
+    const enhancedVideoPrompt = `
+PROFESSIONAL CGI VIDEO GENERATION:
+
+🎬 CINEMATOGRAPHY:
+${cameraMovements}
+
+🎭 VISUAL NARRATIVE:
+${cinematicDirection}
+
+⏱️ TIMING: ${durationSeconds} seconds
+🎯 FOCUS: Maintain product prominence throughout the sequence
+💫 QUALITY: Ultra-realistic CGI with seamless motion and perfect lighting continuity
+📐 ASPECT: Professional composition with balanced framing
+✨ STYLE: Cinematic, commercial-grade video production
+
+TECHNICAL REQUIREMENTS:
+- Smooth, professional camera work
+- Consistent lighting and shadows
+- Natural product movement within scene
+- High-resolution output (1080p minimum)
+- Fluid ${durationSeconds}-second duration
+- Commercial-quality post-production feel
+`;
+
+    console.log("🎬 Video prompt enhancement completed:", {
+      enhancedPromptLength: enhancedVideoPrompt.length,
+      audioIncluded: !!audioPrompt,
+      cameraMovementsLength: cameraMovements.length,
+      cinematicDirectionLength: cinematicDirection.length
+    });
+
+    return {
+      enhancedVideoPrompt,
+      audioPrompt,
+      cameraMovements,
+      cinematicDirection
+    };
+
+  } catch (error) {
+    console.error("❌ Gemini video enhancement error:", error);
+    
+    // Provide intelligent fallback based on project details
+    const fallbackCameraMovement = projectDetails.duration <= 5 ? 
+      "Smooth 5-second product focus with subtle camera push-in and gentle rotation" :
+      "Dynamic 10-second sequence with opening wide shot, smooth dolly movement, and close-up product showcase finale";
+    
+    const fallbackVideoPrompt = `
+Professional CGI video: ${fallbackCameraMovement}. 
+Ultra-realistic ${projectDetails.duration}-second commercial-quality sequence showcasing the product.
+Cinematic lighting, smooth motion, high-resolution output.
+${projectDetails.userDescription}
+`;
+
+    return {
+      enhancedVideoPrompt: fallbackVideoPrompt,
+      audioPrompt: projectDetails.includeAudio ? 
+        "Natural ambient environmental sounds matching the scene atmosphere with subtle product-related audio effects" : 
+        undefined,
+      cameraMovements: fallbackCameraMovement,
+      cinematicDirection: `Professional ${projectDetails.duration}-second product showcase sequence`
+    };
+  }
+}
