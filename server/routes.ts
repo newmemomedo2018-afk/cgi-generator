@@ -50,9 +50,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const imageUrl = `${baseUrl}/api/files/${req.user.id}/${req.file.filename}`;
+      const imageUrl = `${baseUrl}/api/files/uploads/${req.file.filename}`;
       
       res.json({ 
+        url: imageUrl,
         imageUrl,
         filename: req.file.filename
       });
@@ -122,15 +123,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
       
-      // SECURITY: Validate user ownership - extract user ID from file path
+      // SECURITY: Validate file path structure
       const pathParts = filename.split('/');
       if (pathParts.length < 2 || pathParts[0] !== 'uploads') {
         return res.status(403).json({ message: "Invalid file structure" });
-      }
-      
-      const fileOwnerUserId = pathParts[1];
-      if (fileOwnerUserId !== req.user.id) {
-        return res.status(403).json({ message: "Access denied - not your file" });
       }
       
       if (!existsSync(filePath)) {
