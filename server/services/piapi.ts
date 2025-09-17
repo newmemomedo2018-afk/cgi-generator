@@ -24,7 +24,7 @@ export async function generateVideoWithPiAPI(imageUrl: string, durationSeconds?:
           aspect_ratio: "16:9",
           mode: "std",
           version: "1.6",
-          cfg_scale: "0.5"
+          cfg_scale: 0.5
         }
       }),
     });
