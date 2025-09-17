@@ -5,7 +5,8 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./auth";
 import { insertProjectSchema, insertTransactionSchema } from "@shared/schema";
 import { z } from "zod";
-import { promises as fs, createReadStream, existsSync } from 'fs';
+import { promises as fs, createReadStream, existsSync, mkdirSync } from 'fs';
+import Stripe from 'stripe';
 import path from 'path';
 import { enhancePromptWithGemini, generateImageWithGemini } from './services/gemini';
 import { ObjectStorageService, ObjectNotFoundError } from './objectStorage';
@@ -30,7 +31,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     destination: (req: any, file: any, cb: any) => {
       const uploadDir = '/tmp/uploads';
       if (!existsSync(uploadDir)) {
-        require('fs').mkdirSync(uploadDir, { recursive: true });
+        mkdirSync(uploadDir, { recursive: true });
       }
       cb(null, uploadDir);
     },
@@ -292,7 +293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Create Stripe payment intent
-      const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
       
       const paymentIntent = await stripe.paymentIntents.create({
         amount: Math.round(amount * 100), // Convert to cents
@@ -323,10 +324,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Stripe webhook handler - SECURED with proper raw body parsing
   app.post('/api/webhooks/stripe', express.raw({type: 'application/json'}), async (req, res) => {
     const sig = req.headers['stripe-signature'];
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+    
+    if (!sig) {
+      return res.status(400).send('No stripe signature provided');
+    }
     
     try {
-      const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+      const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
       
       if (event.type === 'payment_intent.succeeded') {
         const paymentIntent = event.data.object;
