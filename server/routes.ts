@@ -23,70 +23,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
 
-  // Get upload URL endpoint - returns presigned URL for direct client upload
-  app.post('/api/get-upload-url', isAuthenticated, async (req: any, res) => {
+  // Get upload URL endpoint for product images
+  app.post('/api/objects/upload', isAuthenticated, async (req: any, res) => {
     try {
-      const { fileType } = req.body;
-      
-      // Extract file extension from MIME type (support images and videos)
-      const extensionMap: { [key: string]: string } = {
-        // Image types
-        'image/jpeg': 'jpg',
-        'image/jpg': 'jpg', 
-        'image/png': 'png',
-        'image/gif': 'gif',
-        'image/webp': 'webp',
-        // Video types
-        'video/mp4': 'mp4',
-        'video/webm': 'webm',
-        'video/quicktime': 'mov',
-        'video/x-msvideo': 'avi'
-      };
-      
-      const fileExtension = extensionMap[fileType] || 'jpg';
-      
       const objectStorageService = new ObjectStorageService();
-      const { url, objectPath, relativePath } = await objectStorageService.getImageUploadURL(req.user.id, fileExtension);
-      
-      res.json({ 
-        uploadUrl: url,
-        objectPath: objectPath,
-        relativePath: relativePath
-      });
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
     } catch (error) {
       console.error("Error getting upload URL:", error);
       res.status(500).json({ message: "Failed to get upload URL" });
     }
   });
 
-  // Confirm upload endpoint - called after successful client upload
-  app.post('/api/confirm-upload', isAuthenticated, async (req: any, res) => {
+  // Update product image endpoint - called after successful client upload
+  app.put('/api/product-images', isAuthenticated, async (req: any, res) => {
     try {
-      const { objectPath, relativePath } = req.body;
+      const { productImageURL } = req.body;
       
-      if (!objectPath || !relativePath) {
-        return res.status(400).json({ message: "Object path and relative path required" });
+      if (!productImageURL) {
+        return res.status(400).json({ error: "productImageURL is required" });
       }
 
-      // Verify the object exists in storage
       const objectStorageService = new ObjectStorageService();
-      try {
-        await objectStorageService.getObjectFile(objectPath);
-      } catch (error) {
-        if (error instanceof ObjectNotFoundError) {
-          return res.status(404).json({ message: "Uploaded file not found" });
-        }
-        throw error;
-      }
+      const objectPath = objectStorageService.normalizeObjectEntityPath(productImageURL);
       
       // Generate public URL dynamically from current request
       const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const imageUrl = `${baseUrl}/public-objects/${relativePath}`;
+      const imageUrl = `${baseUrl}${objectPath}`;
       
-      res.json({ url: imageUrl });
+      res.status(200).json({
+        objectPath: objectPath,
+        imageUrl: imageUrl
+      });
     } catch (error) {
-      console.error("Error confirming upload:", error);
-      res.status(500).json({ message: "Failed to confirm upload" });
+      console.error("Error setting product image:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Serve objects endpoint for uploaded files
+  app.get("/objects/:objectPath(*)", isAuthenticated, async (req, res) => {
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const objectFile = await objectStorageService.getObjectEntityFile(req.path);
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error serving object:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
     }
   });
 
@@ -655,10 +641,7 @@ async function processProject(projectId: string) {
     
     // Save the generated image to Object Storage with correct extension
     const objectStorageService = new ObjectStorageService();
-    const { url: uploadUrl, objectPath, relativePath } = await objectStorageService.getImageUploadURL(
-      project.userId, 
-      fileExtension
-    );
+    const uploadUrl = await objectStorageService.getObjectEntityUploadURL();
     
     // Convert Base64 to Buffer and upload with correct Content-Type
     const imageBuffer = Buffer.from(geminiImageResult.base64, 'base64');
@@ -680,11 +663,12 @@ async function processProject(projectId: string) {
       throw new Error('Failed to upload generated image');
     }
     
-    // Generate public URL for the saved image
+    // Generate public URL for the saved image by normalizing the upload URL
+    const objectPath = objectStorageService.normalizeObjectEntityPath(uploadUrl);
     const baseUrl = process.env.REPL_ID ? 
       `https://${process.env.REPL_ID}.${process.env.REPL_OWNER}.repl.co` : 
       'http://localhost:5000';
-    const imageUrl = `${baseUrl}/public-objects/${relativePath}`;
+    const imageUrl = `${baseUrl}${objectPath}`;
     
     const imageResult = { url: imageUrl };
 
