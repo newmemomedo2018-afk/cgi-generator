@@ -251,8 +251,8 @@ export default function Dashboard() {
     localStorage.removeItem('auth_token');
     // Clear any cached user data
     queryClient.clear();
-    // Redirect to logout endpoint
-    window.location.href = "/api/logout";
+    // Force page reload to home after clearing everything
+    window.location.href = "/";
   };
 
   const handleProductImageUpload = async (file: File) => {
