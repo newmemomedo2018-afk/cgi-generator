@@ -785,6 +785,19 @@ async function processProject(projectId: string) {
             project.videoDurationSeconds || 10,
             project.includeAudio || false
           );
+          
+          // Only update video URL if generation succeeded
+          await storage.updateProject(projectId, { 
+            outputVideoUrl: videoResult.url,
+            progress: 95 
+          });
+          
+          console.log("Video generation completed successfully:", {
+            projectId,
+            videoUrl: videoResult.url,
+            duration: videoResult.duration
+          });
+          
         } finally {
           // Record cost even if video generation fails
           totalCostMillicents += COSTS.VIDEO_GENERATION;
@@ -793,14 +806,9 @@ async function processProject(projectId: string) {
             totalCostMillicents += COSTS.AUDIO_GENERATION;
           }
         }
-
-        await storage.updateProject(projectId, { 
-          outputVideoUrl: videoResult.url,
-          progress: 95 
-        });
       } catch (videoError) {
         console.error("Video generation failed, but image is complete:", videoError);
-        // Still mark as completed since image generation succeeded
+        // Still mark as completed since image generation succeeded, but without video URL
       }
     }
 
