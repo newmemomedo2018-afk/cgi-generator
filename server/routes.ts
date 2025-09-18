@@ -825,7 +825,9 @@ async function processProject(projectId: string) {
     console.log("🎬 Checking video generation condition:", {
       projectId,
       contentType: project.contentType,
-      shouldGenerateVideo: project.contentType === "video"
+      shouldGenerateVideo: project.contentType === "video",
+      imageUrl: imageResult.url,
+      promptLength: finalVideoPrompt.length
     });
     
     if (project.contentType === "video") {
@@ -886,8 +888,16 @@ async function processProject(projectId: string) {
           }
         }
       } catch (videoError) {
-        console.error("Video generation failed, but image is complete:", videoError);
+        console.error("❌ VIDEO GENERATION FAILED:", {
+          projectId,
+          errorMessage: videoError instanceof Error ? videoError.message : "Unknown error",
+          errorStack: videoError instanceof Error ? videoError.stack : "No stack trace",
+          imageUrl: imageResult.url,
+          promptLength: finalVideoPrompt.length
+        });
+        
         // Still mark as completed since image generation succeeded, but without video URL
+        console.log("🔄 Continuing without video - project will be marked completed with image only");
       }
     }
 
