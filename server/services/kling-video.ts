@@ -157,9 +157,33 @@ export async function generateVideoWithKling(
         sizeInKB: Math.round(imageBuffer.byteLength / 1024)
       });
       
-      // For now, try with original buffer and let Kling handle it
-      // TODO: Add proper image compression library
-      console.log("🔄 Attempting to send large image to Kling anyway...");
+      // Compress image using Sharp
+      console.log("🔄 Compressing image with Sharp...");
+      const sharp = (await import('sharp')).default;
+      
+      // Compress with high quality but smaller file size
+      const compressedBuffer = await sharp(Buffer.from(imageBuffer))
+        .jpeg({ 
+          quality: 85,         // Good quality but compressed
+          progressive: true,   // Progressive JPEG
+          mozjpeg: true       // Use mozjpeg encoder for better compression
+        })
+        .resize(1024, 1024, { // Resize to max 1024x1024 while maintaining aspect ratio
+          fit: 'inside',
+          withoutEnlargement: true
+        })
+        .toBuffer();
+      
+      console.log("✅ Image compressed successfully:", {
+        originalSize: imageBuffer.byteLength,
+        compressedSize: compressedBuffer.byteLength,
+        originalKB: Math.round(imageBuffer.byteLength / 1024),
+        compressedKB: Math.round(compressedBuffer.byteLength / 1024),
+        compressionRatio: `${Math.round((1 - compressedBuffer.byteLength / imageBuffer.byteLength) * 100)}%`
+      });
+      
+      // Use compressed buffer
+      imageBuffer = compressedBuffer.buffer;
     }
     
     const imageBase64 = Buffer.from(imageBuffer).toString('base64');
