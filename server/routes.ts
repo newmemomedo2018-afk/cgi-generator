@@ -896,8 +896,14 @@ async function processProject(projectId: string) {
           promptLength: finalVideoPrompt.length
         });
         
-        // Still mark as completed since image generation succeeded, but without video URL
-        console.log("🔄 Continuing without video - project will be marked completed with image only");
+        // Store error in database instead of hiding it
+        await storage.updateProject(projectId, { 
+          errorMessage: `Video generation failed: ${videoError instanceof Error ? videoError.message : "Unknown error"}`,
+          status: "failed"
+        });
+        
+        // Don't continue as completed - mark as failed
+        throw videoError;
       }
     }
 
