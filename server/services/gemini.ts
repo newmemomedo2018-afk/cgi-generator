@@ -184,14 +184,21 @@ Generate a COMMAND-STYLE prompt like this example:
 
 User Request: ${userDescription}
 
+IMPORTANT: The user request above might be in Arabic. If it is in Arabic, translate and interpret it properly. For example:
+- "ضيف ناس منبهرين بالمنتج" means "Add people amazed by the product" - you should include people in the scene looking amazed or impressed by the product
+- "غير المكان" means "Change the location/place" 
+- "خليه أكبر" means "Make it bigger"
+- "حسن الإضاءة" means "Improve the lighting"
+
 BE SPECIFIC about:
 - What SPECIFIC object to REMOVE from the scene (be precise - only that object)
 - What EXACT product to INSERT  
 - HOW it should look and be positioned
+- If user wants PEOPLE added, specify their positioning and emotions (amazed, impressed, interacting with product)
 - Lighting and shadow matching requirements
 - WHAT TO PRESERVE (ceiling, walls, floor, other furniture)
 
-Write DIRECT COMMANDS in English for the AI image generator. Use action verbs like "Remove ONLY", "Replace", "Position", "Make sure", "Keep unchanged", "Preserve", "Render".
+Write DIRECT COMMANDS in English for the AI image generator. Use action verbs like "Remove ONLY", "Replace", "Position", "Make sure", "Keep unchanged", "Preserve", "Render", "Add people".
 `;
 
     const result = await model.generateContent([
