@@ -214,7 +214,7 @@ export async function generateVideoWithKling(
           progressive: false,  // Disable progressive for smaller size
           mozjpeg: true       
         })
-        .resize(256, 256, {   // Very small size
+        .resize(320, 320, {   // Minimum safe size for Kling (300px+ required)
           fit: 'inside',
           withoutEnlargement: true
         })
