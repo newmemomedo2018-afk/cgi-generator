@@ -161,14 +161,14 @@ export async function generateVideoWithKling(
       console.log("🔄 Compressing image with Sharp...");
       const sharp = (await import('sharp')).default;
       
-      // Compress with high quality but smaller file size
+      // Compress aggressively for Kling API size limits
       const compressedBuffer = await sharp(Buffer.from(imageBuffer))
         .jpeg({ 
-          quality: 85,         // Good quality but compressed
+          quality: 60,         // Lower quality for smaller size
           progressive: true,   // Progressive JPEG
           mozjpeg: true       // Use mozjpeg encoder for better compression
         })
-        .resize(1024, 1024, { // Resize to max 1024x1024 while maintaining aspect ratio
+        .resize(512, 512, {   // Much smaller size for Kling API limits
           fit: 'inside',
           withoutEnlargement: true
         })
@@ -186,7 +186,52 @@ export async function generateVideoWithKling(
       imageBuffer = compressedBuffer.buffer;
     }
     
-    const imageBase64 = Buffer.from(imageBuffer).toString('base64');
+    let imageBase64 = Buffer.from(imageBuffer).toString('base64');
+    
+    console.log("📊 Payload size analysis:", {
+      imageBinarySize: imageBuffer.byteLength,
+      base64Size: imageBase64.length,
+      base64SizeKB: Math.round(imageBase64.length / 1024),
+      promptLength: prompt.length
+    });
+
+    // Check total payload size (base64 is roughly 33% larger than binary)
+    const estimatedPayloadSize = imageBase64.length + prompt.length + 500; // 500 for JSON overhead
+    const maxAllowedSize = 150000; // 150KB max payload size
+    
+    if (estimatedPayloadSize > maxAllowedSize) {
+      console.log("🔴 Payload still too large, compressing further...", {
+        estimatedSize: estimatedPayloadSize,
+        limit: maxAllowedSize,
+        exceededBy: estimatedPayloadSize - maxAllowedSize
+      });
+      
+      // Ultra aggressive compression for very strict limits
+      const sharp = (await import('sharp')).default;
+      const ultraCompressed = await sharp(Buffer.from(imageBuffer))
+        .jpeg({ 
+          quality: 40,         // Very low quality
+          progressive: false,  // Disable progressive for smaller size
+          mozjpeg: true       
+        })
+        .resize(256, 256, {   // Very small size
+          fit: 'inside',
+          withoutEnlargement: true
+        })
+        .toBuffer();
+      
+      imageBuffer = ultraCompressed.buffer;
+      const newBase64 = Buffer.from(imageBuffer).toString('base64');
+      
+      console.log("🟡 Ultra compression applied:", {
+        newSize: imageBuffer.byteLength,
+        newBase64Size: newBase64.length,
+        newBase64KB: Math.round(newBase64.length / 1024)
+      });
+      
+      // Update base64 string
+      imageBase64 = newBase64;
+    }
 
     // Prepare Kling AI request via PiAPI
     const klingApiKey = process.env.KLING_API_KEY;
