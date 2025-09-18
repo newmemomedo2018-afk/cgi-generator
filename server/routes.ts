@@ -17,8 +17,7 @@ const COSTS = {
   GEMINI_PROMPT_ENHANCEMENT: 2,   // $0.002 per request (2 millicents)
   GEMINI_IMAGE_GENERATION: 2,     // $0.002 per request (2 millicents)
   GEMINI_VIDEO_ANALYSIS: 3,       // $0.003 per video analysis (3 millicents) - NEW
-  VIDEO_GENERATION: 130,          // $0.13 per video (130 millicents) - Updated for Kling AI
-  AUDIO_GENERATION: 70            // $0.07 per audio addition (70 millicents) - New for Kling Audio
+  VIDEO_GENERATION: 130           // $0.13 per video (130 millicents) - Updated for Kling AI
 } as const;
 
 
@@ -277,8 +276,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      const creditsNeeded = projectData.contentType === "image" ? 1 : 
-                         projectData.includeAudio ? 7 : 5; // 5 for video + 2 for audio
+      const creditsNeeded = projectData.contentType === "image" ? 1 : 5; // 5 for video
       const isAdmin = user.email === 'admin@test.com';
       
       if (!isAdmin && user.credits < creditsNeeded) {
@@ -791,7 +789,7 @@ async function processProject(projectId: string) {
           geminiImageResult, // Use the generated image data
           {
             duration: project.videoDurationSeconds || 10,
-            includeAudio: project.includeAudio || false,
+            includeAudio: false,
             userDescription: project.description || "",
             productName: project.title || "Product"
           }
@@ -849,8 +847,8 @@ async function processProject(projectId: string) {
             promptLength: finalVideoPrompt.length,
             promptType: finalVideoPrompt === enhancedPrompt ? "original" : "video-enhanced",
             duration: project.videoDurationSeconds || 10,
-            includeAudio: project.includeAudio || false,
-            hasAudioPrompt: !!audioPrompt
+            includeAudio: false,
+            hasAudioPrompt: false
           });
           
           // Use the video-enhanced prompt and selected video duration
@@ -858,7 +856,7 @@ async function processProject(projectId: string) {
             imageResult.url, 
             finalVideoPrompt, // Use enhanced video prompt instead of original
             project.videoDurationSeconds || 10,
-            project.includeAudio || false
+            false // Audio disabled
           );
           
           console.log("🎬 generateVideoWithKling returned:", {
@@ -882,10 +880,6 @@ async function processProject(projectId: string) {
         } finally {
           // Record cost even if video generation fails
           totalCostMillicents += COSTS.VIDEO_GENERATION;
-          // Add audio cost if audio was requested
-          if (project.includeAudio) {
-            totalCostMillicents += COSTS.AUDIO_GENERATION;
-          }
         }
       } catch (videoError) {
         console.error("❌ VIDEO GENERATION FAILED:", {

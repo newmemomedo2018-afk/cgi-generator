@@ -50,7 +50,6 @@ export const projects = pgTable("projects", {
   sceneVideoUrl: varchar("scene_video_url"), // New: support video scene input
   contentType: varchar("content_type", { enum: ["image", "video"] }).notNull(),
   videoDurationSeconds: integer("video_duration_seconds").default(5), // New: 5 or 10 seconds
-  includeAudio: boolean("include_audio").default(false), // New: audio option for videos
   status: varchar("status", { 
     enum: ["pending", "processing", "enhancing_prompt", "generating_image", "generating_video", "completed", "failed"] 
   }).default("pending"),
@@ -89,7 +88,6 @@ export const insertProjectSchema = createInsertSchema(projects).pick({
   sceneVideoUrl: true,
   contentType: true,
   videoDurationSeconds: true,
-  includeAudio: true,
   resolution: true,
   quality: true,
 }).refine((data) => {
