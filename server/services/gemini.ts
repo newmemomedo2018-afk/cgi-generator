@@ -187,8 +187,8 @@ User Request: ${userDescription}
 CRITICAL ARABIC LANGUAGE SUPPORT: The user request might be in Arabic. You MUST understand and interpret Arabic properly:
 
 ARABIC PHRASES AND MEANINGS:
-- "أضف ناس منبهرين بالمنتج" / "ضيف ناس منبهرين بالمنتج" = "Add people amazed by the product" → Include 2-4 people in the scene showing expressions of amazement, wonder, or admiration while looking at or interacting with the product
-- "أضف أشخاص منبهرين بالمنتج" = "Add people amazed by the product" → Same as above, include people showing amazement
+- "أضف ناس منبهرين بالمنتج" / "ضيف ناس منبهرين بالمنتج" = "Add people amazed by the product" → MANDATORY: Include actual human figures (2-4 people) in the scene with visible expressions of amazement, wonder, or admiration while looking at or interacting with the product. Do NOT interpret this metaphorically.
+- "أضف أشخاص منبهرين بالمنتج" = "Add people amazed by the product" → MANDATORY: Same as above, include actual human people showing amazement, NOT just visual storytelling
 - "لا تضيف أشخاص" / "بدون ناس" / "ما في ناس" = "Don't add people" / "Without people" → Do NOT include any human figures
 - "غير المكان" / "بدل المكان" = "Change the location/place" → Modify the scene environment
 - "خليه أكبر" / "كبره" / "كبّر" / "زود الحجم" = "Make it bigger" → Increase the product size
@@ -220,23 +220,26 @@ QUANTITY AND NUMBER WORDS:
 
 IMPORTANT INTERPRETATION RULES:
 1. CHECK FOR NEGATION FIRST: Words like "لا" / "بدون" / "ما في" mean DO NOT include that element
-2. If user mentions "ناس" or "أشخاص" (people) WITHOUT negation, include human figures in the scene
+2. If user mentions "ناس" or "أشخاص" (people) WITHOUT negation, MANDATORY: include actual human figures in the scene - DO NOT interpret this as mood, atmosphere, or visual storytelling
 3. If user mentions "منبهر" or "معجب" (amazed/impressed), show people with expressions of wonder, surprise, or admiration
 4. If user mentions interaction words like "يستعمل" (using) or "يتفاعل" (interacting), show people actively engaging with the product
 5. When adding people, use EXACT quantities if specified (شخصين = exactly 2 people)
 6. Use positioning words to place elements precisely (يمين = right side, فوق = above, etc.)
 7. Translate the MEANING and INTENT, not just literal words
-8. ALWAYS output your response in ENGLISH, even if the input is Arabic
+8. NEVER interpret people requests as "visual storytelling" or "mood" - they mean literal human figures
+9. ALWAYS output your response in ENGLISH, even if the input is Arabic
 
 BE SPECIFIC about:
 - What SPECIFIC object to REMOVE from the scene (be precise - only that object)
 - What EXACT product to INSERT  
 - HOW it should look and be positioned
-- If user wants PEOPLE added, specify their positioning and emotions (amazed, impressed, interacting with product)
+- If user wants PEOPLE added, specify their positioning and emotions (amazed, impressed, interacting with product) - MANDATORY: Include actual human figures, not abstract concepts
 - Lighting and shadow matching requirements
 - WHAT TO PRESERVE (ceiling, walls, floor, other furniture)
 
-Write DIRECT COMMANDS in English for the AI image generator. Use action verbs like "Remove ONLY", "Replace", "Position", "Make sure", "Keep unchanged", "Preserve", "Render", "Add people".
+CRITICAL: When user requests people in Arabic ("ناس" / "أشخاص"), you MUST include actual human figures in the scene. Do NOT interpret this as "mood", "atmosphere", "visual storytelling", or "implied presence". Include visible people with clear facial expressions and body language.
+
+Write DIRECT COMMANDS in English for the AI image generator. Use action verbs like "Remove ONLY", "Replace", "Position", "Make sure", "Keep unchanged", "Preserve", "Render", "Add people", "Include human figures".
 `;
 
     const result = await model.generateContent([

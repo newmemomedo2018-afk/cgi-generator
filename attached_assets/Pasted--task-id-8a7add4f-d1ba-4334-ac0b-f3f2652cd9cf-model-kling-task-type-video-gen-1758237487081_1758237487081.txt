@@ -1,0 +1,67 @@
+{
+  "task_id": "8a7add4f-d1ba-4334-ac0b-f3f2652cd9cf",
+  "model": "kling",
+  "task_type": "video_generation",
+  "status": "completed",
+  "config": {
+    "service_mode": "",
+    "webhook_config": {
+      "endpoint": "",
+      "secret": ""
+    }
+  },
+  "input": {
+    "aspect_ratio": "16:9",
+    "cfg_scale": 0.5,
+    "duration": 5,
+    "image_url": "https://res.cloudinary.com/dqtsski2w/image/upload/v1758237237/cgi-generated/cgi-generated/generated-1758237236842-97951623.png",
+    "mode": "std",
+    "negative_prompt": "",
+    "prompt": "\nPROFESSIONAL CGI VIDEO GENERATION:\n\n🎬 CINEMATOGRAPHY:\nSmooth 5-second camera movement showcasing the product with cinematic flow\n\n🎭 VISUAL NARRATIVE:\nProfessional 5-second product showcase with dynamic visual progression\n\n⏱️ TIMING: 5 seconds\n🎯 FOCUS: Maintain product prominence throughout the sequence\n💫 QUALITY: Ultra-realistic CGI with seamless motion and perfect lighting continuity\n📐 ASPECT: Professional composition with balanced framing\n✨ STYLE: Cinematic, commercial-grade video production\n\nTECHNICAL REQUIREMENTS:\n- Smooth, professional camera work\n- Consistent lighting and shadows\n- Natural product movement within scene\n- High-resolution output (1080p minimum)\n- Fluid 5-second duration\n- Commercial-quality post-production feel\n"
+  },
+  "output": {
+    "video_url": "https://storage.theapi.app/videos/290208751538711.mp4",
+    "type": "m2v_img2video",
+    "status": 99,
+    "works": [
+      {
+        "content_type": "video",
+        "status": 99,
+        "type": "m2v_img2video",
+        "cover": {
+          "resource": "https://s15-kling.klingai.com/kimg/EMXN1y8qgwEKBnVwbG9hZBIOeWxhYi1zdHVudC1zZ3AaaXNlL2FpX3BvcnRhbF9zZ3BfbTJ2X2ltZzJ2aWRlb18xMDgwcF9zdGRfdjE2X2Rpc3RpbGwvMmQwYjQ1M2YtN2Y1YS00ODJhLTlhY2QtYmNjNzcwZDZlODliX3ZpZGVvX2NvdmVyLmpwZw.origin?x-kcdn-pid=112372",
+          "resource_without_watermark": "",
+          "height": 992,
+          "width": 896,
+          "duration": 0
+        },
+        "video": {
+          "resource": "https://v15-kling.klingai.com/bs2/upload-ylab-stunt-sgp/se/ai_portal_sgp_m2v_img2video_1080p_std_v16_distill/0772559f-5362-413f-82c6-257f322d2703_video.mp4?x-kcdn-pid=112372",
+          "resource_without_watermark": "https://storage.theapi.app/videos/290208751538711.mp4",
+          "height": 992,
+          "width": 896,
+          "duration": 5100
+        }
+      }
+    ]
+  },
+  "meta": {
+    "created_at": "2025-09-18T23:14:06.143289101Z",
+    "started_at": "2025-09-18T23:14:06.884446285Z",
+    "ended_at": "2025-09-18T23:15:56.05185403Z",
+    "usage": {
+      "type": "point",
+      "frozen": 2600000,
+      "consume": 2600000
+    },
+    "is_using_private_pool": false
+  },
+  "detail": null,
+  "logs": null,
+  "error": {
+    "code": 0,
+    "raw_message": "",
+    "message": "",
+    "detail": null
+  }
+}
