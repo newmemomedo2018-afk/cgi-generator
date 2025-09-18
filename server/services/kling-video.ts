@@ -183,91 +183,121 @@ export async function generateVideoWithKling(
       imageBuffer = normalizedBuffer;
     }
     
-    // Check if image is too large for Kling (limit appears to be around 300KB)
-    if (imageBuffer.byteLength > 300000) { // 300KB limit
-      console.log("⚠️ Image too large for Kling API:", {
-        size: imageBuffer.byteLength,
-        limit: 300000,
-        sizeInKB: Math.round(imageBuffer.byteLength / 1024)
-      });
+    // Apply PNG8 palette compression with iterative size reduction
+    console.log("🔄 Starting PNG8 palette compression...");
+    const sharpCompression = (await import('sharp')).default;
+    
+    // Iterative compression with color reduction (16→8→4)
+    const colorSteps = [16, 8, 4];
+    let compressedBuffer = imageBuffer;
+    let iteration = 0;
+    
+    for (const colors of colorSteps) {
+      iteration++;
+      console.log(`🎨 Compression iteration ${iteration}: Trying ${colors} colors...`);
       
-      // Compress image using Sharp
-      console.log("🔄 Compressing image with Sharp...");
-      const sharp = (await import('sharp')).default;
-      
-      // Compress aggressively for Kling API size limits
-      const compressedBuffer = await sharp(Buffer.from(imageBuffer))
-        .png({ 
-          quality: 30,         // Much lower quality for smaller size
-          compressionLevel: 9, // Maximum PNG compression
-          adaptiveFiltering: false  // Disable for smaller files
-        })
-        .resize(256, 256, {   // Much smaller size for Kling API limits
-          fit: 'contain',  // Maintain aspect ratio with padding
-          background: { r: 255, g: 255, b: 255, alpha: 1 }, // White background
-          withoutEnlargement: false  // Allow upscaling if needed
-        })
-        .toBuffer();
-      
-      console.log("✅ Image compressed successfully:", {
-        originalSize: imageBuffer.byteLength,
-        compressedSize: compressedBuffer.byteLength,
-        originalKB: Math.round(imageBuffer.byteLength / 1024),
-        compressedKB: Math.round(compressedBuffer.byteLength / 1024),
-        compressionRatio: `${Math.round((1 - compressedBuffer.byteLength / imageBuffer.byteLength) * 100)}%`
-      });
-      
-      // Use compressed buffer
-      imageBuffer = compressedBuffer;
+      try {
+        compressedBuffer = await sharpCompression(Buffer.from(imageBuffer))
+          .resize(320, 320, { 
+            fit: 'contain',  // Maintain aspect ratio with padding
+            background: { r: 255, g: 255, b: 255, alpha: 1 }, // White background
+            withoutEnlargement: false  // Allow upscaling to meet 320x320 minimum
+          })
+          .png({ 
+            palette: true,      // Use PNG8 palette quantization
+            colors: colors,     // Reduce color palette
+            effort: 10,         // Maximum effort for compression
+            dither: 0.5        // Dithering for better quality
+          })
+          .toBuffer();
+        
+        const sizeKB = Math.round(compressedBuffer.byteLength / 1024);
+        
+        console.log(`🎨 Iteration ${iteration} result:`, {
+          colors,
+          size: compressedBuffer.byteLength,
+          sizeKB,
+          compressionRatio: `${Math.round((1 - compressedBuffer.byteLength / imageBuffer.byteLength) * 100)}%`
+        });
+        
+        // Check if we've achieved the target size for base64 encoding - USE BYTE LENGTH FOR UTF-8
+        const base64Size = Math.ceil(compressedBuffer.byteLength * 4 / 3); // Base64 is ~33% larger
+        const promptByteSize = Buffer.byteLength(prompt, 'utf8');
+        const totalPayloadSize = base64Size + promptByteSize + 500; // Include JSON overhead
+        
+        if (totalPayloadSize < 50000) { // 50KB limit
+          console.log(`✅ Target size achieved with ${colors} colors:`, {
+            binarySize: compressedBuffer.byteLength,
+            base64Size,
+            promptCharacters: prompt.length,
+            promptBytes: promptByteSize,
+            totalPayloadSize,
+            underLimit: true
+          });
+          break; // Success! Use this compression level
+        } else {
+          console.log(`⚠️ Still too large with ${colors} colors:`, {
+            totalPayloadSize,
+            promptCharacters: prompt.length,
+            promptBytes: promptByteSize,
+            limit: 50000,
+            exceedsBy: totalPayloadSize - 50000
+          });
+          // Continue to next iteration with fewer colors
+        }
+        
+      } catch (compressionError) {
+        console.error(`❌ Compression failed with ${colors} colors:`, compressionError);
+        // Continue with next color count or use previous result
+      }
     }
     
+    // Use the compressed buffer
+    imageBuffer = compressedBuffer;
+    
+    console.log("✅ PNG8 palette compression completed:", {
+      finalSize: imageBuffer.byteLength,
+      finalSizeKB: Math.round(imageBuffer.byteLength / 1024),
+      totalCompressionRatio: `${Math.round((1 - imageBuffer.byteLength / imageBuffer.byteLength) * 100)}%`
+    });
+    
+    // Convert to base64 and validate payload size
     let imageBase64 = Buffer.from(imageBuffer).toString('base64');
     
-    console.log("📊 Payload size analysis:", {
+    console.log("📊 Final payload size analysis:", {
       imageBinarySize: imageBuffer.byteLength,
       base64Size: imageBase64.length,
       base64SizeKB: Math.round(imageBase64.length / 1024),
-      promptLength: prompt.length
+      promptCharacters: prompt.length,
+      promptBytes: Buffer.byteLength(prompt, 'utf8')
     });
 
-    // Check total payload size (base64 is roughly 33% larger than binary)
-    const estimatedPayloadSize = imageBase64.length + prompt.length + 500; // 500 for JSON overhead
+    // Final payload size validation - CRITICAL: Use byte length for UTF-8 text
+    const promptByteLength = Buffer.byteLength(prompt, 'utf8');
+    const finalPayloadSize = imageBase64.length + promptByteLength + 500; // 500 for JSON overhead
     const maxAllowedSize = 50000; // 50KB max payload size for Kling API
     
-    if (estimatedPayloadSize > maxAllowedSize) {
-      console.log("🔴 Payload still too large, compressing further...", {
-        estimatedSize: estimatedPayloadSize,
-        limit: maxAllowedSize,
-        exceededBy: estimatedPayloadSize - maxAllowedSize
-      });
-      
-      // Ultra aggressive compression for very strict limits
-      const sharp = (await import('sharp')).default;
-      const ultraCompressed = await sharp(Buffer.from(imageBuffer))
-        .png({ 
-          quality: 20,         // Ultra low quality
-          compressionLevel: 9, // Maximum PNG compression
-          adaptiveFiltering: false  // Disable for smaller files
-        })
-        .resize(320, 320, {   // Minimum safe size for Kling (300px+ required)
-          fit: 'contain',  // Maintain aspect ratio with padding
-          background: { r: 255, g: 255, b: 255, alpha: 1 }, // White background  
-          withoutEnlargement: false  // Allow upscaling to meet minimum
-        })
-        .toBuffer();
-      
-      imageBuffer = ultraCompressed;
-      const newBase64 = Buffer.from(imageBuffer).toString('base64');
-      
-      console.log("🟡 Ultra compression applied:", {
-        newSize: imageBuffer.byteLength,
-        newBase64Size: newBase64.length,
-        newBase64KB: Math.round(newBase64.length / 1024)
-      });
-      
-      // Update base64 string
-      imageBase64 = newBase64;
+    console.log("🔍 Pre-API payload validation:", {
+      finalPayloadSize,
+      maxAllowedSize,
+      isUnderLimit: finalPayloadSize < maxAllowedSize,
+      marginBytes: maxAllowedSize - finalPayloadSize,
+      promptCharacters: prompt.length,
+      promptBytes: promptByteLength,
+      base64ImageBytes: imageBase64.length
+    });
+    
+    // CRITICAL: Assert payload size before sending to API
+    if (finalPayloadSize >= maxAllowedSize) {
+      const errorMessage = `❌ COMPRESSION FAILED: Payload size ${finalPayloadSize} bytes exceeds ${maxAllowedSize} byte limit by ${finalPayloadSize - maxAllowedSize} bytes. Cannot proceed with API call.`;
+      console.error(errorMessage);
+      throw new Error(`Compression failed to meet size requirements: ${finalPayloadSize} bytes > ${maxAllowedSize} bytes limit`);
     }
+    
+    console.log("✅ Payload validation passed - safe to send to Kling API", {
+      finalPayloadSize,
+      compressionSuccessful: true
+    });
 
     // Prepare Kling AI request via PiAPI
     const klingApiKey = process.env.KLING_API_KEY;
@@ -290,13 +320,27 @@ export async function generateVideoWithKling(
       }
     };
 
-    console.log("Sending request to Kling AI...", {
+    // EXPLICIT LOGGING BEFORE PiAPI CALL - USE BYTE-ACCURATE VALIDATION
+    const jsonPayload = JSON.stringify(requestPayload);
+    const payloadSizeBytes = Buffer.byteLength(jsonPayload, 'utf8');
+    console.log("🚀 SENDING REQUEST TO KLING AI VIA PiAPI:", {
       model: requestPayload.model,
       task_type: requestPayload.task_type,
       duration: requestPayload.input.duration,
       aspectRatio: requestPayload.input.aspect_ratio,
-      promptLength: prompt.length
+      promptCharacters: prompt.length,
+      promptBytes: Buffer.byteLength(prompt, 'utf8'),
+      payloadSizeBytes,
+      payloadSizeKB: Math.round(payloadSizeBytes / 1024),
+      compressionValidated: true,
+      apiEndpoint: 'https://api.piapi.ai/api/v1/task',
+      byteLengthValidation: 'ENABLED'
     });
+    
+    // FINAL ASSERTION: Verify payload is under limit
+    if (payloadSizeBytes >= 50000) {
+      throw new Error(`CRITICAL ERROR: Final payload ${payloadSizeBytes} bytes exceeds 50KB limit - this should never happen after compression!`);
+    }
 
     // Make request to PiAPI v1 endpoint
     const response = await fetch('https://api.piapi.ai/api/v1/task', {
