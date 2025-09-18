@@ -624,13 +624,16 @@ export default function Dashboard() {
 
                       {/* Project Description */}
                       <div>
-                        <Label htmlFor="description">وصف المشروع (اختياري)</Label>
+                        <Label htmlFor="description">تحسين دمج الصور (اختياري)</Label>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          اكتب وصف يساعد الذكي الاصطناعي في دمج المنتج بشكل أفضل مع المشهد المختار
+                        </p>
                         <Textarea
                           id="description"
                           value={projectData.description}
                           onChange={(e) => setProjectData(prev => ({ ...prev, description: e.target.value }))}
                           rows={4}
-                          placeholder="اكتب وصفاً مفصلاً لما تريد تحقيقه في المشروع..."
+                          placeholder="مثال: منتج فاخر، إضاءة طبيعية، ألوان دافئة، نمط عصري..."
                           className="bg-input border-border"
                           data-testid="project-description-input"
                         />
