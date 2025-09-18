@@ -269,34 +269,22 @@ CRITICAL IMAGE GENERATION REQUIREMENTS:
 GENERATE THE COMPOSITE IMAGE NOW.
 `;
 
-    // Send request to Gemini with multi-image input using correct MIME types
-    // CRITICAL: Must specify responseMimeType to get image output instead of text
-    const result = await model.generateContent({
-      contents: [{
-        role: "user",
-        parts: [
-          {
-            text: prompt
-          },
-          {
-            inlineData: {
-              data: productImageData.base64,
-              mimeType: productImageData.mimeType
-            }
-          },
-          {
-            inlineData: {
-              data: sceneImageData.base64,
-              mimeType: sceneImageData.mimeType
-            }
-          }
-        ]
-      }],
-      generationConfig: {
-        responseMimeType: "image/png",
-        temperature: 0.7
+    // Send request to Gemini with multi-image input using original working format
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          data: productImageData.base64,
+          mimeType: productImageData.mimeType
+        }
+      },
+      {
+        inlineData: {
+          data: sceneImageData.base64,
+          mimeType: sceneImageData.mimeType
+        }
       }
-    });
+    ]);
 
     const response = await result.response;
     
