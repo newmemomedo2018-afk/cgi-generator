@@ -310,7 +310,7 @@ export async function generateVideoWithKling(
       task_type: "video_generation",
       input: {
         prompt: prompt,
-        image_url: `data:image/jpeg;base64,${imageBase64}`,
+        image_url: imageBase64,  // Send raw base64 without data URL prefix
         duration: durationSeconds,
         aspect_ratio: "16:9",
         mode: "std", // std or pro
