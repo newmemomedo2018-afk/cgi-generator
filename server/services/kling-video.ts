@@ -177,18 +177,27 @@ export async function generateVideoWithKling(
     // EXPLICIT LOGGING BEFORE PiAPI CALL - USE BYTE-ACCURATE VALIDATION
     const jsonPayload = JSON.stringify(requestPayload);
     const payloadSizeBytes = Buffer.byteLength(jsonPayload, 'utf8');
-    console.log("🚀 SENDING REQUEST TO KLING AI VIA PiAPI:", {
+    console.log("🚀 SENDING REQUEST TO KLING AI VIA PiAPI - USING DIRECT URL METHOD:", {
       model: requestPayload.model,
       task_type: requestPayload.task_type,
       duration: requestPayload.input.duration,
       aspectRatio: requestPayload.input.aspect_ratio,
+      imageUrl: imageUrl,
+      imageUrlLength: imageUrl.length,
       promptCharacters: prompt.length,
       promptBytes: Buffer.byteLength(prompt, 'utf8'),
       payloadSizeBytes,
       payloadSizeKB: Math.round(payloadSizeBytes / 1024),
-      directUrl: true,
+      METHOD: "DIRECT_URL_NO_BASE64",
       apiEndpoint: 'https://api.piapi.ai/api/v1/task'
     });
+    
+    // ✅ EXPLICIT VALIDATION: Make sure we're sending URL not base64
+    if (requestPayload.input.image_url.startsWith('/9j/') || requestPayload.input.image_url.length > 1000) {
+      throw new Error(`🚨 CRITICAL: Still sending base64 instead of URL! Length: ${requestPayload.input.image_url.length}`);
+    }
+    
+    console.log("✅ VALIDATION PASSED: Sending direct URL to Kling API:", requestPayload.input.image_url);
 
     // Make request to PiAPI v1 endpoint
     const response = await fetch('https://api.piapi.ai/api/v1/task', {
