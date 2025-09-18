@@ -149,6 +149,40 @@ export async function generateVideoWithKling(
     
     console.log("Image downloaded successfully, size:", imageBuffer.byteLength);
     
+    // Check image dimensions first to ensure minimum 300px requirement
+    const sharp = (await import('sharp')).default;
+    const metadata = await sharp(Buffer.from(imageBuffer)).metadata();
+    const minDimension = Math.min(metadata.width || 0, metadata.height || 0);
+    
+    console.log("📐 Image dimensions check:", {
+      width: metadata.width,
+      height: metadata.height,
+      minDimension,
+      meetsKlingRequirement: minDimension >= 300
+    });
+    
+    // If dimensions are too small, normalize to minimum safe size
+    if (minDimension < 300) {
+      console.log("🔧 Normalizing image to minimum safe dimensions...");
+      
+      const normalizedBuffer = await sharp(Buffer.from(imageBuffer))
+        .resize(320, 320, { 
+          fit: 'contain',  // Maintain aspect ratio with padding
+          background: { r: 255, g: 255, b: 255, alpha: 1 }, // White background
+          withoutEnlargement: false  // Allow upscaling
+        })
+        .jpeg({ quality: 85, progressive: true, mozjpeg: true })
+        .toBuffer();
+      
+      console.log("✅ Image normalized:", {
+        originalSize: imageBuffer.byteLength,
+        normalizedSize: normalizedBuffer.byteLength,
+        guaranteedMinDimension: 320
+      });
+      
+      imageBuffer = normalizedBuffer;
+    }
+    
     // Check if image is too large for Kling (limit appears to be around 300KB)
     if (imageBuffer.byteLength > 300000) { // 300KB limit
       console.log("⚠️ Image too large for Kling API:", {
@@ -168,9 +202,10 @@ export async function generateVideoWithKling(
           progressive: true,   // Progressive JPEG
           mozjpeg: true       // Use mozjpeg encoder for better compression
         })
-        .resize(512, 512, {   // Much smaller size for Kling API limits
-          fit: 'inside',
-          withoutEnlargement: true
+        .resize(512, 512, {   // Smaller size for Kling API limits
+          fit: 'contain',  // Maintain aspect ratio with padding
+          background: { r: 255, g: 255, b: 255, alpha: 1 }, // White background
+          withoutEnlargement: false  // Allow upscaling if needed
         })
         .toBuffer();
       
@@ -183,7 +218,7 @@ export async function generateVideoWithKling(
       });
       
       // Use compressed buffer
-      imageBuffer = compressedBuffer.buffer;
+      imageBuffer = compressedBuffer;
     }
     
     let imageBase64 = Buffer.from(imageBuffer).toString('base64');
@@ -215,12 +250,13 @@ export async function generateVideoWithKling(
           mozjpeg: true       
         })
         .resize(320, 320, {   // Minimum safe size for Kling (300px+ required)
-          fit: 'inside',
-          withoutEnlargement: true
+          fit: 'contain',  // Maintain aspect ratio with padding
+          background: { r: 255, g: 255, b: 255, alpha: 1 }, // White background  
+          withoutEnlargement: false  // Allow upscaling to meet minimum
         })
         .toBuffer();
       
-      imageBuffer = ultraCompressed.buffer;
+      imageBuffer = ultraCompressed;
       const newBase64 = Buffer.from(imageBuffer).toString('base64');
       
       console.log("🟡 Ultra compression applied:", {
