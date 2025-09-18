@@ -198,11 +198,11 @@ export async function generateVideoWithKling(
       // Compress aggressively for Kling API size limits
       const compressedBuffer = await sharp(Buffer.from(imageBuffer))
         .png({ 
-          quality: 60,         // Lower quality for smaller size
+          quality: 30,         // Much lower quality for smaller size
           compressionLevel: 9, // Maximum PNG compression
           adaptiveFiltering: false  // Disable for smaller files
         })
-        .resize(512, 512, {   // Smaller size for Kling API limits
+        .resize(256, 256, {   // Much smaller size for Kling API limits
           fit: 'contain',  // Maintain aspect ratio with padding
           background: { r: 255, g: 255, b: 255, alpha: 1 }, // White background
           withoutEnlargement: false  // Allow upscaling if needed
@@ -232,7 +232,7 @@ export async function generateVideoWithKling(
 
     // Check total payload size (base64 is roughly 33% larger than binary)
     const estimatedPayloadSize = imageBase64.length + prompt.length + 500; // 500 for JSON overhead
-    const maxAllowedSize = 150000; // 150KB max payload size
+    const maxAllowedSize = 50000; // 50KB max payload size for Kling API
     
     if (estimatedPayloadSize > maxAllowedSize) {
       console.log("🔴 Payload still too large, compressing further...", {
@@ -245,7 +245,7 @@ export async function generateVideoWithKling(
       const sharp = (await import('sharp')).default;
       const ultraCompressed = await sharp(Buffer.from(imageBuffer))
         .png({ 
-          quality: 40,         // Very low quality
+          quality: 20,         // Ultra low quality
           compressionLevel: 9, // Maximum PNG compression
           adaptiveFiltering: false  // Disable for smaller files
         })
