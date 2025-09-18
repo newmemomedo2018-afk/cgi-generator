@@ -24,7 +24,7 @@ async function addAudioToVideo(
   // Create audio generation request for video
   const audioRequestPayload = {
     model: "kling",
-    task_type: "kling_sound",
+    task_type: "sound",
     input: {
       video_url: videoUrl,
       prompt: `Add atmospheric background music and realistic sound effects that match the scene. ${prompt.substring(0, 100)}`,
