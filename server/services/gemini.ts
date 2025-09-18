@@ -248,40 +248,55 @@ export async function generateImageWithGemini(
 
     // تكوين الـ prompt مع الصور للـ multi-image input
     const prompt = `
-MULTI-IMAGE COMPOSITION TASK:
+GENERATE A NEW IMAGE by composing these two input images:
 
-PRODUCT IMAGE (First): The exact product to be placed
-SCENE IMAGE (Second): The target environment/background
+INPUT 1 (Product): Extract this exact product/object
+INPUT 2 (Scene): Place the product into this environment
 
-INSTRUCTIONS:
+COMPOSITION INSTRUCTIONS:
 ${enhancedPrompt}
 
-CRITICAL REQUIREMENTS:
-- Preserve the scene background 100% exactly (lighting, people, buildings, textures)
-- Only replace/add the product from the first image into the scene
+CRITICAL IMAGE GENERATION REQUIREMENTS:
+- CREATE A NEW PHOTOREALISTIC IMAGE (not text description)
+- Extract the product from image 1 and seamlessly place it in scene from image 2
+- Preserve scene background 100% exactly (lighting, people, buildings, textures)
 - Match lighting, shadows, and perspective perfectly
-- Maintain photorealistic CGI quality with ultra-sharp details
-- Render at high resolution (1024x1024 minimum)
-- Use the exact product branding, colors, and shape from the first image
-- Seamless integration with no visible compositing artifacts
+- Ultra-sharp details, high resolution (1024x1024 minimum)
+- Use exact product branding, colors, and shape from first image
+- Professional CGI quality with no compositing artifacts
+- OUTPUT: Return the generated composite image, not text analysis
+
+GENERATE THE COMPOSITE IMAGE NOW.
 `;
 
     // Send request to Gemini with multi-image input using correct MIME types
-    const result = await model.generateContent([
-      {
-        inlineData: {
-          data: productImageData.base64,
-          mimeType: productImageData.mimeType
-        }
-      },
-      {
-        inlineData: {
-          data: sceneImageData.base64,
-          mimeType: sceneImageData.mimeType
-        }
-      },
-      prompt
-    ]);
+    // CRITICAL: Must specify responseMimeType to get image output instead of text
+    const result = await model.generateContent({
+      contents: [{
+        role: "user",
+        parts: [
+          {
+            text: prompt
+          },
+          {
+            inlineData: {
+              data: productImageData.base64,
+              mimeType: productImageData.mimeType
+            }
+          },
+          {
+            inlineData: {
+              data: sceneImageData.base64,
+              mimeType: sceneImageData.mimeType
+            }
+          }
+        ]
+      }],
+      generationConfig: {
+        responseMimeType: "image/png",
+        temperature: 0.7
+      }
+    });
 
     const response = await result.response;
     
