@@ -184,11 +184,49 @@ Generate a COMMAND-STYLE prompt like this example:
 
 User Request: ${userDescription}
 
-IMPORTANT: The user request above might be in Arabic. If it is in Arabic, translate and interpret it properly. For example:
-- "ضيف ناس منبهرين بالمنتج" means "Add people amazed by the product" - you should include people in the scene looking amazed or impressed by the product
-- "غير المكان" means "Change the location/place" 
-- "خليه أكبر" means "Make it bigger"
-- "حسن الإضاءة" means "Improve the lighting"
+CRITICAL ARABIC LANGUAGE SUPPORT: The user request might be in Arabic. You MUST understand and interpret Arabic properly:
+
+ARABIC PHRASES AND MEANINGS:
+- "أضف ناس منبهرين بالمنتج" / "ضيف ناس منبهرين بالمنتج" = "Add people amazed by the product" → Include 2-4 people in the scene showing expressions of amazement, wonder, or admiration while looking at or interacting with the product
+- "أضف أشخاص منبهرين بالمنتج" = "Add people amazed by the product" → Same as above, include people showing amazement
+- "لا تضيف أشخاص" / "بدون ناس" / "ما في ناس" = "Don't add people" / "Without people" → Do NOT include any human figures
+- "غير المكان" / "بدل المكان" = "Change the location/place" → Modify the scene environment
+- "خليه أكبر" / "كبره" / "كبّر" / "زود الحجم" = "Make it bigger" → Increase the product size
+- "حسن الإضاءة" / "حسن النور" / "أضئه أحسن" = "Improve the lighting" → Enhance lighting quality
+- "زود التفاصيل" / "زِوِّد" / "زوّد" = "Add more details" → Include more detailed elements
+- "خليه أوضح" / "وضحه أكثر" = "Make it clearer" → Improve clarity and sharpness
+- "أضف ألوان أكثر" / "زود الألوان" = "Add more colors" → Include more vibrant colors
+- "خليه يبان أحسن" / "حسّنه" = "Make it look better" → Improve overall appearance
+- "أضف ناس يستعملوا المنتج" / "يستخدموا" / "استعمال" / "استخدام" = "Add people using the product" → Show people actively using/interacting with the product
+- "خليه في وسط الصورة" / "في المنتصف" / "في الوسط" = "Put it in the center of the image" → Position the product centrally
+
+POSITIONING AND DIRECTION WORDS:
+- "يمين" / "على اليمين" = "right" / "on the right" → Position on the right side
+- "يسار" / "على اليسار" = "left" / "on the left" → Position on the left side  
+- "أمام" / "قدام" = "in front" → Position in the foreground
+- "خلف" / "وراء" = "behind" → Position in the background
+- "فوق" / "أعلى" = "above" / "top" → Position above or on top
+- "تحت" / "أسفل" = "below" / "bottom" → Position below or at bottom
+- "قريب" / "أقرب" = "close" / "closer" → Move closer to viewer
+- "بعيد" / "أبعد" = "far" / "farther" → Move farther from viewer
+
+QUANTITY AND NUMBER WORDS:
+- "شخص واحد" / "واحد بس" = "one person only" → Include exactly 1 person
+- "شخصين" / "اثنين" = "two people" → Include exactly 2 people  
+- "ثلاثة أشخاص" / "ثلاثة" = "three people" → Include exactly 3 people
+- "أربعة" / "أربع أشخاص" = "four people" → Include exactly 4 people
+- "خمسة" / "خمس أشخاص" = "five people" → Include exactly 5 people
+- "كتير ناس" / "ناس كثيرة" = "many people" → Include 5+ people in background
+
+IMPORTANT INTERPRETATION RULES:
+1. CHECK FOR NEGATION FIRST: Words like "لا" / "بدون" / "ما في" mean DO NOT include that element
+2. If user mentions "ناس" or "أشخاص" (people) WITHOUT negation, include human figures in the scene
+3. If user mentions "منبهر" or "معجب" (amazed/impressed), show people with expressions of wonder, surprise, or admiration
+4. If user mentions interaction words like "يستعمل" (using) or "يتفاعل" (interacting), show people actively engaging with the product
+5. When adding people, use EXACT quantities if specified (شخصين = exactly 2 people)
+6. Use positioning words to place elements precisely (يمين = right side, فوق = above, etc.)
+7. Translate the MEANING and INTENT, not just literal words
+8. ALWAYS output your response in ENGLISH, even if the input is Arabic
 
 BE SPECIFIC about:
 - What SPECIFIC object to REMOVE from the scene (be precise - only that object)
@@ -454,6 +492,28 @@ ${isShortVideo ? 'Smooth pan/zoom movement' : 'Dynamic camera sequence'}
 
 USER REQUEST: "${userDescription}"
 
+CRITICAL ARABIC LANGUAGE SUPPORT: The user request might be in Arabic. You MUST understand and interpret Arabic properly:
+
+ARABIC VIDEO DIRECTION PHRASES:
+- "أضف حركة للكاميرا" = "Add camera movement" → Include smooth camera motion
+- "زوم على المنتج" = "Zoom on the product" → Focus closer on the product
+- "اعرض المنتج من كل الجهات" = "Show the product from all sides" → 360-degree or orbital camera movement
+- "خليه يتحرك ببطء" = "Make it move slowly" → Slow, cinematic camera movement
+- "أضف حركة سريعة" = "Add fast movement" → Dynamic, energetic camera work
+- "اعمل فيديو مثير" = "Make an exciting video" → Dramatic camera movements and transitions
+- "خليه يبان أحسن" = "Make it look better" → Enhance visual appeal through camera work
+- "لا تحرك الكاميرا كثير" / "بدون حركة سريعة" = "Don't move camera too much" / "Without fast movement" → Use minimal, smooth movements
+- "ابدأ من بعيد" = "Start from far" → Begin with wide shot
+- "اقرب في النهاية" = "Get close at the end" → End with close-up shot
+
+IMPORTANT VIDEO INTERPRETATION RULES:
+1. If user mentions camera-related Arabic words like "كاميرا" (camera) or "تصوير" (filming), focus on camera movements
+2. If user mentions speed like "بطء" (slow) or "سريع" (fast), adjust the pacing accordingly
+3. If user mentions showing "من كل الجهات" (from all sides), suggest orbital or multi-angle shots
+4. Check for negation: "لا" / "بدون" / "ما في" mean avoid that element
+5. Translate the EMOTION and ENERGY level, not just literal words
+6. ALWAYS output your response in ENGLISH, even if the input is Arabic
+
 Write concise AI video commands using action verbs: "Begin with", "Move camera", "Focus on", "End with".
 `;
 
@@ -562,17 +622,36 @@ ANALYZE this completed CGI image composition and provide EXPERT video production
 
 🎯 YOUR MISSION - Create PROFESSIONAL video production instructions:
 
+CRITICAL ARABIC LANGUAGE SUPPORT: The user vision might be in Arabic. You MUST understand and interpret Arabic properly:
+
+ARABIC VIDEO DIRECTION PHRASES:
+- "أضف حركة للكاميرا" = "Add camera movement" → Include smooth camera motion
+- "زوم على المنتج" = "Zoom on the product" → Focus closer on the product
+- "اعرض المنتج من كل الجهات" = "Show the product from all sides" → 360-degree or orbital camera movement
+- "خليه يتحرك ببطء" = "Make it move slowly" → Slow, cinematic camera movement
+- "أضف حركة سريعة" = "Add fast movement" → Dynamic, energetic camera work
+- "اعمل فيديو مثير" = "Make an exciting video" → Dramatic camera movements and transitions
+- "خليه يبان أحسن" = "Make it look better" → Enhance visual appeal through camera work
+
+IMPORTANT VIDEO INTERPRETATION RULES:
+1. If user mentions camera-related Arabic words like "كاميرا" (camera) or "تصوير" (filming), focus on camera movements
+2. If user mentions speed like "بطء" (slow) or "سريع" (fast), adjust the pacing accordingly
+3. If user mentions showing "من كل الجهات" (from all sides), suggest orbital or multi-angle shots
+4. Translate the EMOTION and ENERGY level, not just literal words
+
 1. 📹 CAMERA MOVEMENT ANALYSIS:
    - Study the composition, lighting, and spatial relationships
    - Determine the MOST CINEMATIC camera movements for this specific scene
    - Consider: dolly, pan, tilt, zoom, orbit, push-in, pull-out, slider movements
    - Match movement to the ${durationSeconds}-second timeframe
+   - INTERPRET user's Arabic request for movement style and energy
 
 2. 🎭 CINEMATIC DIRECTION:
    - Analyze the scene's mood, atmosphere, and visual weight
    - Suggest the most compelling visual narrative flow
    - Define key moments and transitions within ${durationSeconds} seconds
    - Consider product showcase timing and emphasis points
+   - ADAPT to user's Arabic vision for video style and energy
 
 ${projectDetails.includeAudio ? `
 3. 🔊 NATURAL AUDIO DESIGN:
