@@ -184,14 +184,41 @@ Generate a COMMAND-STYLE prompt like this example:
 
 User Request: ${userDescription}
 
+CRITICAL USER REQUEST PROCESSING: The user request might be ANYTHING - animals, objects, people, colors, positions, lighting, emotions, etc. You MUST interpret ALL requests LITERALLY and apply them to the final image. Do NOT ignore or dismiss any user request as "mood" or "storytelling".
+
+UNIVERSAL REQUEST INTERPRETATION RULES:
+1. ANY request from the user MUST be implemented literally in the final image
+2. If user asks to ADD something → ADD it visibly and clearly  
+3. If user asks to CHANGE something → CHANGE it exactly as requested
+4. If user asks to REMOVE something → REMOVE it completely
+5. If user specifies QUANTITIES → Use exact numbers (not approximate)
+6. If user specifies POSITIONS → Place elements exactly where requested
+7. If user mentions COLORS → Apply those exact colors
+8. If user describes EMOTIONS/EXPRESSIONS → Show them clearly on faces
+9. NEVER interpret requests as "abstract concepts" - make them VISIBLE and CONCRETE
+
 CRITICAL ARABIC LANGUAGE SUPPORT: The user request might be in Arabic. You MUST understand and interpret Arabic properly:
 
-ARABIC PHRASES AND MEANINGS:
+ARABIC PHRASES AND MEANINGS (APPLY ALL LITERALLY):
 - "أضف ناس منبهرين بالمنتج" / "ضيف ناس منبهرين بالمنتج" = "Add people amazed by the product" → MANDATORY: Include actual human figures (2-4 people) in the scene with visible expressions of amazement, wonder, or admiration while looking at or interacting with the product. Do NOT interpret this metaphorically.
 - "أضف أشخاص منبهرين بالمنتج" = "Add people amazed by the product" → MANDATORY: Same as above, include actual human people showing amazement, NOT just visual storytelling
 - "لا تضيف أشخاص" / "بدون ناس" / "ما في ناس" = "Don't add people" / "Without people" → Do NOT include any human figures
+
+ANIMALS AND OBJECTS REQUESTS:
+- "أضف فيل" / "ضيف فيل" = "Add elephant" → Include an actual elephant in the scene
+- "أضف قطة" / "ضيف قطة" = "Add cat" → Include an actual cat in the scene  
+- "أضف كلب" / "ضيف كلب" = "Add dog" → Include an actual dog in the scene
+- "أضف طيور" / "ضيف عصافير" = "Add birds" → Include actual birds in the scene
+- "أضف زهور" / "ضيف ورود" = "Add flowers" → Include actual flowers in the scene
+- "أضف شجر" / "ضيف أشجار" = "Add trees" → Include actual trees in the scene
+- "أضف سحاب" / "ضيف غيوم" = "Add clouds" → Include actual clouds in the sky
+- "أضف نار" / "ضيف شعلة" = "Add fire" → Include actual fire/flames in the scene
+
+MODIFICATIONS AND CHANGES:
 - "غير المكان" / "بدل المكان" = "Change the location/place" → Modify the scene environment
+- "غير اللون" / "بدل اللون" = "Change the color" → Modify the color as specified
 - "خليه أكبر" / "كبره" / "كبّر" / "زود الحجم" = "Make it bigger" → Increase the product size
+- "خليه أصغر" / "صغره" = "Make it smaller" → Decrease the product size
 - "حسن الإضاءة" / "حسن النور" / "أضئه أحسن" = "Improve the lighting" → Enhance lighting quality
 - "زود التفاصيل" / "زِوِّد" / "زوّد" = "Add more details" → Include more detailed elements
 - "خليه أوضح" / "وضحه أكثر" = "Make it clearer" → Improve clarity and sharpness
@@ -220,14 +247,16 @@ QUANTITY AND NUMBER WORDS:
 
 IMPORTANT INTERPRETATION RULES:
 1. CHECK FOR NEGATION FIRST: Words like "لا" / "بدون" / "ما في" mean DO NOT include that element
-2. If user mentions "ناس" or "أشخاص" (people) WITHOUT negation, MANDATORY: include actual human figures in the scene - DO NOT interpret this as mood, atmosphere, or visual storytelling
-3. If user mentions "منبهر" or "معجب" (amazed/impressed), show people with expressions of wonder, surprise, or admiration
-4. If user mentions interaction words like "يستعمل" (using) or "يتفاعل" (interacting), show people actively engaging with the product
-5. When adding people, use EXACT quantities if specified (شخصين = exactly 2 people)
-6. Use positioning words to place elements precisely (يمين = right side, فوق = above, etc.)
-7. Translate the MEANING and INTENT, not just literal words
-8. NEVER interpret people requests as "visual storytelling" or "mood" - they mean literal human figures
-9. ALWAYS output your response in ENGLISH, even if the input is Arabic
+2. APPLY ALL USER REQUESTS LITERALLY - Do not dismiss any request as "mood" or "abstract concept"
+3. If user mentions ANY OBJECT/ANIMAL/PERSON WITHOUT negation, include it visibly in the scene
+4. If user mentions "ناس" or "أشخاص" (people) WITHOUT negation, MANDATORY: include actual human figures in the scene - DO NOT interpret this as mood, atmosphere, or visual storytelling
+5. If user mentions "منبهر" or "معجب" (amazed/impressed), show people with expressions of wonder, surprise, or admiration
+6. If user mentions interaction words like "يستعمل" (using) or "يتفاعل" (interacting), show people actively engaging with the product
+7. When adding people, use EXACT quantities if specified (شخصين = exactly 2 people)
+8. Use positioning words to place elements precisely (يمين = right side, فوق = above, etc.)
+9. Translate the MEANING and INTENT, not just literal words
+10. NEVER interpret ANY requests as "visual storytelling" or "mood" - make them CONCRETE and VISIBLE
+11. ALWAYS output your response in ENGLISH, even if the input is Arabic
 
 BE SPECIFIC about:
 - What SPECIFIC object to REMOVE from the scene (be precise - only that object)
@@ -495,6 +524,19 @@ ${isShortVideo ? 'Smooth pan/zoom movement' : 'Dynamic camera sequence'}
 
 USER REQUEST: "${userDescription}"
 
+CRITICAL USER REQUEST PROCESSING: The user request might be ANYTHING - animals, objects, people, colors, positions, lighting, emotions, etc. You MUST interpret ALL requests LITERALLY and apply them to the final video. Do NOT ignore or dismiss any user request as "mood" or "storytelling".
+
+UNIVERSAL REQUEST INTERPRETATION RULES FOR VIDEO:
+1. ANY request from the user MUST be implemented literally in the final video
+2. If user asks to ADD something → ADD it visibly and clearly in the video
+3. If user asks to CHANGE something → CHANGE it exactly as requested
+4. If user asks to REMOVE something → REMOVE it completely from the video
+5. If user specifies QUANTITIES → Use exact numbers (not approximate)
+6. If user specifies POSITIONS → Place elements exactly where requested in the video
+7. If user mentions COLORS → Apply those exact colors in the video
+8. If user describes EMOTIONS/EXPRESSIONS → Show them clearly on faces throughout the video
+9. NEVER interpret requests as "abstract concepts" - make them VISIBLE and CONCRETE in the video
+
 CRITICAL ARABIC LANGUAGE SUPPORT: The user request might be in Arabic. You MUST understand and interpret Arabic properly:
 
 ARABIC PHRASES FOR PEOPLE AND OBJECTS:
@@ -641,6 +683,19 @@ ANALYZE this completed CGI image composition and provide EXPERT video production
 - Product Focus: ${projectDetails.productName || 'Main product in scene'}
 
 🎯 YOUR MISSION - Create PROFESSIONAL video production instructions:
+
+CRITICAL USER REQUEST PROCESSING: The user request might be ANYTHING - animals, objects, people, colors, positions, lighting, emotions, etc. You MUST interpret ALL requests LITERALLY and apply them to the final video. Do NOT ignore or dismiss any user request as "mood" or "storytelling".
+
+UNIVERSAL REQUEST INTERPRETATION RULES FOR VIDEO:
+1. ANY request from the user MUST be implemented literally in the final video
+2. If user asks to ADD something → ADD it visibly and clearly in the video
+3. If user asks to CHANGE something → CHANGE it exactly as requested
+4. If user asks to REMOVE something → REMOVE it completely from the video
+5. If user specifies QUANTITIES → Use exact numbers (not approximate)
+6. If user specifies POSITIONS → Place elements exactly where requested in the video
+7. If user mentions COLORS → Apply those exact colors in the video
+8. If user describes EMOTIONS/EXPRESSIONS → Show them clearly on faces throughout the video
+9. NEVER interpret requests as "abstract concepts" - make them VISIBLE and CONCRETE in the video
 
 CRITICAL ARABIC LANGUAGE SUPPORT: The user vision might be in Arabic. You MUST understand and interpret Arabic properly:
 
