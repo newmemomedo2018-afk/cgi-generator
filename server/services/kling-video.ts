@@ -252,12 +252,18 @@ export async function generateVideoWithKling(
       });
 
       if (!statusResponse.ok) {
-        console.error("Failed to check Kling AI status:", statusResponse.status);
+        const errorText = await statusResponse.text();
+        console.error("Failed to check Kling AI status:", {
+          status: statusResponse.status,
+          statusText: statusResponse.statusText,
+          error: errorText,
+          taskId: taskId
+        });
         
         // If we get persistent errors and have tried enough times, give up
         if (attempts > 10 && (statusResponse.status === 400 || statusResponse.status === 404)) {
           console.error(`Persistent API errors (${statusResponse.status}) after ${attempts} attempts - giving up`);
-          throw new Error(`Kling AI status check failed: HTTP ${statusResponse.status} after ${attempts} attempts`);
+          throw new Error(`Kling AI status check failed: HTTP ${statusResponse.status} after ${attempts} attempts. Error: ${errorText}`);
         }
         continue;
       }
@@ -290,14 +296,31 @@ export async function generateVideoWithKling(
         // Add audio if requested
         let finalVideoUrl = videoUrl;
         if (includeAudio) {
-          console.log("Adding audio to video...");
+          console.log("🔊 AUDIO INTEGRATION REQUESTED:", {
+            originalVideoUrl: videoUrl,
+            prompt: prompt.substring(0, 100) + "...",
+            includeAudio: includeAudio
+          });
           try {
             finalVideoUrl = await addAudioToVideo(videoUrl, prompt, klingApiKey);
-            console.log("Audio added successfully to video:", finalVideoUrl);
+            console.log("🎵 AUDIO ADDED SUCCESSFULLY:", {
+              originalVideoUrl: videoUrl,
+              videoWithAudioUrl: finalVideoUrl,
+              audioIntegrationSuccess: true
+            });
           } catch (audioError) {
-            console.error("Failed to add audio, using original video:", audioError);
+            const errorMessage = audioError instanceof Error ? audioError.message : String(audioError);
+            const errorStack = audioError instanceof Error ? audioError.stack : undefined;
+            console.error("❌ AUDIO INTEGRATION FAILED:", {
+              originalVideoUrl: videoUrl,
+              audioError: errorMessage,
+              audioErrorStack: errorStack,
+              fallbackToOriginalVideo: true
+            });
             // Continue with original video if audio fails
           }
+        } else {
+          console.log("🔇 NO AUDIO REQUESTED - using original video only");
         }
 
         return {
