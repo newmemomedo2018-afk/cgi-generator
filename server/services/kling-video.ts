@@ -205,7 +205,8 @@ export async function generateVideoWithKling(
           })
           .jpeg({ 
             quality: 85,        // JPEG quality 85%
-            progressive: true   // Progressive JPEG for better loading
+            progressive: false, // Standard JPEG format
+            mozjpeg: true      // Use mozjpeg encoder for better compatibility
           })
           .toBuffer();
         
