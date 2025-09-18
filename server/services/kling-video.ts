@@ -247,6 +247,12 @@ export async function generateVideoWithKling(
 
       if (!statusResponse.ok) {
         console.error("Failed to check Kling AI status:", statusResponse.status);
+        
+        // If we get persistent errors and have tried enough times, give up
+        if (attempts > 10 && (statusResponse.status === 400 || statusResponse.status === 404)) {
+          console.error(`Persistent API errors (${statusResponse.status}) after ${attempts} attempts - giving up`);
+          throw new Error(`Kling AI status check failed: HTTP ${statusResponse.status} after ${attempts} attempts`);
+        }
         continue;
       }
 
