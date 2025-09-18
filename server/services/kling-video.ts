@@ -78,6 +78,12 @@ async function addAudioToVideo(
 
     if (!statusResponse.ok) {
       console.error("Failed to check Kling Sound status:", statusResponse.status);
+      
+      // If we get persistent errors and have tried enough times, give up
+      if (attempts > 5 && (statusResponse.status === 400 || statusResponse.status === 404)) {
+        console.error(`Persistent Sound API errors (${statusResponse.status}) after ${attempts} attempts - giving up`);
+        throw new Error(`Kling Sound status check failed: HTTP ${statusResponse.status} after ${attempts} attempts`);
+      }
       continue;
     }
 
