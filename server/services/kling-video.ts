@@ -12,23 +12,21 @@ interface KlingVideoResult {
  * Add audio to existing video using PiAPI Kling Sound API
  */
 async function addAudioToVideo(
-  videoUrl: string, 
+  videoTaskId: string, 
   prompt: string, 
   klingApiKey: string
 ): Promise<string> {
   console.log("Adding audio to video via PiAPI Kling Sound...", {
-    videoUrl,
+    videoTaskId,
     prompt: prompt.substring(0, 50) + "..."
   });
 
-  // Create audio generation request for video
+  // Create audio generation request using the correct origin_task_id method
   const audioRequestPayload = {
     model: "kling",
     task_type: "sound",
     input: {
-      video_url: videoUrl,
-      prompt: `Add atmospheric background music and realistic sound effects that match the scene. ${prompt.substring(0, 100)}`,
-      duration: "auto" // Automatically match video duration
+      origin_task_id: videoTaskId // Use the video generation task ID, not video URL
     }
   };
 
@@ -107,7 +105,7 @@ async function addAudioToVideo(
       }
 
       console.log("Audio added to video successfully:", {
-        originalVideoUrl: videoUrl,
+        originalVideoTaskId: videoTaskId,
         videoWithAudioUrl,
         attempts
       });
@@ -302,9 +300,10 @@ export async function generateVideoWithKling(
             includeAudio: includeAudio
           });
           try {
-            finalVideoUrl = await addAudioToVideo(videoUrl, prompt, klingApiKey);
+            finalVideoUrl = await addAudioToVideo(taskId, prompt, klingApiKey);
             console.log("🎵 AUDIO ADDED SUCCESSFULLY:", {
               originalVideoUrl: videoUrl,
+              originalVideoTaskId: taskId,
               videoWithAudioUrl: finalVideoUrl,
               audioIntegrationSuccess: true
             });
