@@ -171,7 +171,7 @@ export async function generateVideoWithKling(
           background: { r: 255, g: 255, b: 255, alpha: 1 }, // White background
           withoutEnlargement: false  // Allow upscaling
         })
-        .jpeg({ quality: 85, progressive: true, mozjpeg: true })
+        .png({ quality: 85, compressionLevel: 6, adaptiveFiltering: false })
         .toBuffer();
       
       console.log("✅ Image normalized:", {
@@ -197,10 +197,10 @@ export async function generateVideoWithKling(
       
       // Compress aggressively for Kling API size limits
       const compressedBuffer = await sharp(Buffer.from(imageBuffer))
-        .jpeg({ 
+        .png({ 
           quality: 60,         // Lower quality for smaller size
-          progressive: true,   // Progressive JPEG
-          mozjpeg: true       // Use mozjpeg encoder for better compression
+          compressionLevel: 9, // Maximum PNG compression
+          adaptiveFiltering: false  // Disable for smaller files
         })
         .resize(512, 512, {   // Smaller size for Kling API limits
           fit: 'contain',  // Maintain aspect ratio with padding
@@ -244,10 +244,10 @@ export async function generateVideoWithKling(
       // Ultra aggressive compression for very strict limits
       const sharp = (await import('sharp')).default;
       const ultraCompressed = await sharp(Buffer.from(imageBuffer))
-        .jpeg({ 
+        .png({ 
           quality: 40,         // Very low quality
-          progressive: false,  // Disable progressive for smaller size
-          mozjpeg: true       
+          compressionLevel: 9, // Maximum PNG compression
+          adaptiveFiltering: false  // Disable for smaller files
         })
         .resize(320, 320, {   // Minimum safe size for Kling (300px+ required)
           fit: 'contain',  // Maintain aspect ratio with padding
@@ -281,7 +281,7 @@ export async function generateVideoWithKling(
       task_type: "video_generation",
       input: {
         prompt: prompt,
-        image_url: `data:image/jpeg;base64,${imageBase64}`,
+        image_url: `data:image/png;base64,${imageBase64}`,
         duration: durationSeconds,
         aspect_ratio: "16:9",
         mode: "std", // std or pro
