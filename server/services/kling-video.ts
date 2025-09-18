@@ -203,11 +203,9 @@ export async function generateVideoWithKling(
             background: { r: 255, g: 255, b: 255, alpha: 1 }, // White background
             withoutEnlargement: false  // Allow upscaling to meet 320x320 minimum
           })
-          .png({ 
-            palette: true,      // Use PNG8 palette quantization
-            colors: colors,     // Reduce color palette
-            effort: 10,         // Maximum effort for compression
-            dither: 0.5        // Dithering for better quality
+          .jpeg({ 
+            quality: 85,        // JPEG quality 85%
+            progressive: true   // Progressive JPEG for better loading
           })
           .toBuffer();
         
@@ -311,7 +309,7 @@ export async function generateVideoWithKling(
       task_type: "video_generation",
       input: {
         prompt: prompt,
-        image_url: `data:image/png;base64,${imageBase64}`,
+        image_url: `data:image/jpeg;base64,${imageBase64}`,
         duration: durationSeconds,
         aspect_ratio: "16:9",
         mode: "std", // std or pro

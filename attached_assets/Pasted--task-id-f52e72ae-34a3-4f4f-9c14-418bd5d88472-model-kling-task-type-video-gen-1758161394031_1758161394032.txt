@@ -1,0 +1,45 @@
+{
+  "task_id": "f52e72ae-34a3-4f4f-9c14-418bd5d88472",
+  "model": "kling",
+  "task_type": "video_generation",
+  "status": "failed",
+  "config": {
+    "service_mode": "",
+    "webhook_config": {
+      "endpoint": "",
+      "secret": ""
+    }
+  },
+  "input": {
+    "aspect_ratio": "16:9",
+    "cfg_scale": 0.5,
+    "duration": 10,
+    "image_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUAAAAFABAMAAAA/vriZAAAAMFBMVEX///86NjKGZESFp8Got8JjlbpvTTKoeU2/jmbQIDJNdpI7W2+UhnvEta6nHyvrzcU7Tl7HAAAACXBIWXMAAAsTAAALEwEAmpwYAAAgAElEQVR4nM2dT2wbWZ7fnWCP3fA+BajFNGXN6m1Q1RjR7mAkY4GsZ7NYEchFhAI4ughz2KpDuTuWNQkPLjbg0WJ9MMuAJWEv3eYhRDA7vkg+hB6sD2Iv0GJ7ZK9cbLe9xLQXYTUhA5FEYFJQD4TEBzMVfH+/V0VSf9zu4Mn7z7YsyT3DD7+/v+/3qkqnTn3nWq2t1dbWaiex/vspHWtldXVlDatWW8X/6+o/O8A1gqutEiXUXFurra6urv6zAVxZWV1ZW+2tGoxeI1BeYP8nBVxdWU3MjEWfg3SNzQ3CWj/+2wZcW1lbW1lZW4WQA2t1dRXfX2Xj12qQMvEEon5rJl5ZWaOPYEz/XsU3U1Ji5c+gJ1y2tkoJ4O0AqkWKrayR0YG9xt8mgWF5ZX3lAnBN8BLrKlgTl+CgOwHAw2ttNaWGLyjGNKaUjABjwiTKKLTeBmDfWkt/KZdIXXWttrrCKiKZJh77dhQ8aq1BUJCx5ekLICYJlF12bW3tv/0TAaqVmp48tofVy6maAGfvYK18/7VKH9cQU0k8QdWeD2gCvHtnZXZlhSBnZ2dniZW+9T0WMxGlCn8IqQfwzp2Vn965Mzt7Z4Wg8NfsLAiJ9vtQDuBi6TLxzJ0ZsvKdO3dmZ5hVSXkHn9xZwe//H1A9gDN3fj0LLpD1VmLxO2Tt2ZWU9J8AcGZ2ZubX+HjnDrScmZkhGRU1rQRPafqWAX8NvDs/nfn1zE9nlLXBOjNzZ3amT08FCg0Tgclj34KCJODMzMxPQUjrDgk6C23xZ8D4szMUTrOUnjiUBpd2wPPnz8/MnP/p+Dj+VmtWfZydxR+2O4g5jPqBlZAJFieBOzoBz49fpDUOwj7GgTXLHgpNGZEhOe5JYXLfO+QTJDCWHkDCGqd18eLM+fMXj0bsUzb5cCeJo9RHE5OrwqRLQaAx4flxIGIdiTmbfOQQT2IewjEtqPuWJgWhHPOBkA3OmDPHWbxvIeaJkOOqH1GTguODix2SIC9enKE/37UARW5KX0Bg5aj/QS/gZGrm82Rq/L44M/PdIvbUJCMj8OEAs7OaAVnA8YsIayCSpSHkG8L19KQEql/BlBFwqalnzs/MkJxvKCLZm5PnCQFePD9+fhwKIpZZRXrp72HqpA6dkILgA2eyKFq+F15SKU8IkPlg4/Og43zzvRWcOUEFUfPI0rRST/x+hAiUkzMxZ5uLFCnnezn7zRE5GZ6cghfPk6XPE6aKZhXOb67gzIkpmMh4sS9UZt6s8A2IeIIKJn54EZAqZxPi9wvnkwVMbH2RVVQZ8Y098YRNjDihNpHStjI0eofvo6CmNDMxPj4+cXScjKuywkJyezMDyrdr4mMIiW+c+dgJme17SKgJcHJiYuJIwvOqrKi8qNYM1ZU34tRkYrBNTh7Nd1Gl7IsXgke+H4Z+6VoQvGUFJydzkPAIwt668Mi/WS6Xb5dpfRpcfDNP1AOYy41PToLwsJUv8l/nxx/6PrOVy+VOpVzijf7bApzITUwch6jWTf8mFCyXO52oUumU/2fig69vZHUpmMtN0jo+VD4mC0M9rE7027dr4twkIHMTxHjk+rinYKcTRdFvSTrerrwmfetTMAc7HxcrF8fHPy6RD5J+lUpn4QXD4QPVvmPSo05AYgQiZZ0D68LNNEgiSFh5AQXVho+6sJP2QUU4kTumqtxkH6xUIvyKFl5QYwMFoZ0S8qQA8woPjjiBnHiY8ELigxV2wsoL4B3YqwDy4skqmOOUfZjwgopiSjJRJVp4ATze7YGKcI8IbO2AKuNMjB9IiRfK7IOViFww+jRS...",
+    "mode": "std",
+    "prompt": "PROFESSIONAL CGI VIDEO GENERATION:\n\nCINEMATOGRAPHY:\nSmooth 10-second camera movement showcasing the product with cinematic flow\n\nVISUAL NARRATIVE:\nProfessional 10-second product showcase with dynamic visual progression\n\nTIMING: 10 seconds\nFOCUS: Maintain product prominence throughout the sequence\nQUALITY: Ultra-realistic CGI with seamless motion and perfect lighting continuity\nASPECT: Professional composition with balanced framing\nSTYLE: Cinematic, commercial-grade video production\n\nTECHNICAL REQUIREMENTS:\n- Smooth, professional camera work\n- Consistent lighting and shadows\n- Natural product movement within scene\n- High-resolution output (1080p minimum)\n- Fluid 10-second duration\n- Commercial-quality post-production feel"
+  },
+  "output": {
+    "type": "",
+    "status": 0,
+    "works": null
+  },
+  "meta": {
+    "created_at": "2025-09-18T02:08:03.058648994Z",
+    "started_at": "2025-09-18T02:08:03.918086447Z",
+    "ended_at": "2025-09-18T02:08:07.102703539Z",
+    "usage": {
+      "type": "point",
+      "frozen": 5200000,
+      "consume": 0
+    },
+    "is_using_private_pool": false
+  },
+  "detail": null,
+  "logs": null,
+  "error": {
+    "code": 10000,
+    "raw_message": "create generation task: upload image: download and check image: decode image: flate: corrupt input before offset 133",
+    "message": "task failed",
+    "detail": null
+  }
+}
