@@ -497,6 +497,17 @@ USER REQUEST: "${userDescription}"
 
 CRITICAL ARABIC LANGUAGE SUPPORT: The user request might be in Arabic. You MUST understand and interpret Arabic properly:
 
+ARABIC PHRASES FOR PEOPLE AND OBJECTS:
+- "أضف ناس منبهرين بالمنتج" / "ضيف ناس منبهرين بالمنتج" = "Add people amazed by the product" → MANDATORY: Include actual human figures (2-4 people) in the video scene with visible expressions of amazement, wonder, or admiration while looking at or interacting with the product. Do NOT interpret this metaphorically.
+- "أضف أشخاص منبهرين بالمنتج" = "Add people amazed by the product" → MANDATORY: Same as above, include actual human people showing amazement, NOT just visual storytelling
+- "لا تضيف أشخاص" / "بدون ناس" / "ما في ناس" = "Don't add people" / "Without people" → Do NOT include any human figures
+- "شخص واحد" / "واحد منبهر" = "one person" → Include exactly 1 person
+- "شخصين" / "اثنين منبهرين" = "two people" → Include exactly 2 people
+- "ثلاثة أشخاص" / "ثلاث ناس" = "three people" → Include exactly 3 people
+- "أربعة" / "أربع أشخاص" = "four people" → Include exactly 4 people
+- "خمسة" / "خمس أشخاص" = "five people" → Include exactly 5 people
+- "كتير ناس" / "ناس كثيرة" = "many people" → Include 5+ people in background
+
 ARABIC VIDEO DIRECTION PHRASES:
 - "أضف حركة للكاميرا" = "Add camera movement" → Include smooth camera motion
 - "زوم على المنتج" = "Zoom on the product" → Focus closer on the product
@@ -510,12 +521,18 @@ ARABIC VIDEO DIRECTION PHRASES:
 - "اقرب في النهاية" = "Get close at the end" → End with close-up shot
 
 IMPORTANT VIDEO INTERPRETATION RULES:
-1. If user mentions camera-related Arabic words like "كاميرا" (camera) or "تصوير" (filming), focus on camera movements
-2. If user mentions speed like "بطء" (slow) or "سريع" (fast), adjust the pacing accordingly
-3. If user mentions showing "من كل الجهات" (from all sides), suggest orbital or multi-angle shots
-4. Check for negation: "لا" / "بدون" / "ما في" mean avoid that element
-5. Translate the EMOTION and ENERGY level, not just literal words
-6. ALWAYS output your response in ENGLISH, even if the input is Arabic
+1. CHECK FOR NEGATION FIRST: Words like "لا" / "بدون" / "ما في" mean DO NOT include that element
+2. If user mentions "ناس" or "أشخاص" (people) WITHOUT negation, MANDATORY: include actual human figures in the video - DO NOT interpret this as mood, atmosphere, or visual storytelling
+3. If user mentions "منبهر" or "معجب" (amazed/impressed), show people with expressions of wonder, surprise, or admiration
+4. When adding people, use EXACT quantities if specified (شخصين = exactly 2 people)
+5. If user mentions camera-related Arabic words like "كاميرا" (camera) or "تصوير" (filming), focus on camera movements
+6. If user mentions speed like "بطء" (slow) or "سريع" (fast), adjust the pacing accordingly
+7. If user mentions showing "من كل الجهات" (from all sides), suggest orbital or multi-angle shots
+8. Translate the EMOTION and ENERGY level, not just literal words
+9. NEVER interpret people requests as "visual storytelling" or "mood" - they mean literal human figures
+10. ALWAYS output your response in ENGLISH, even if the input is Arabic
+
+CRITICAL: When user requests people in Arabic ("ناس" / "أشخاص"), you MUST include actual human figures in your video brief. Do NOT interpret this as "mood", "atmosphere", "visual storytelling", or "implied presence". Include visible people with clear facial expressions and body language.
 
 Write concise AI video commands using action verbs: "Begin with", "Move camera", "Focus on", "End with".
 `;
@@ -627,6 +644,17 @@ ANALYZE this completed CGI image composition and provide EXPERT video production
 
 CRITICAL ARABIC LANGUAGE SUPPORT: The user vision might be in Arabic. You MUST understand and interpret Arabic properly:
 
+ARABIC PHRASES FOR PEOPLE AND OBJECTS:
+- "أضف ناس منبهرين بالمنتج" / "ضيف ناس منبهرين بالمنتج" = "Add people amazed by the product" → MANDATORY: Include actual human figures (2-4 people) in the video scene with visible expressions of amazement, wonder, or admiration while looking at or interacting with the product. Do NOT interpret this metaphorically.
+- "أضف أشخاص منبهرين بالمنتج" = "Add people amazed by the product" → MANDATORY: Same as above, include actual human people showing amazement, NOT just visual storytelling
+- "لا تضيف أشخاص" / "بدون ناس" / "ما في ناس" = "Don't add people" / "Without people" → Do NOT include any human figures
+- "شخص واحد" / "واحد منبهر" = "one person" → Include exactly 1 person
+- "شخصين" / "اثنين منبهرين" = "two people" → Include exactly 2 people
+- "ثلاثة أشخاص" / "ثلاث ناس" = "three people" → Include exactly 3 people
+- "أربعة" / "أربع أشخاص" = "four people" → Include exactly 4 people
+- "خمسة" / "خمس أشخاص" = "five people" → Include exactly 5 people
+- "كتير ناس" / "ناس كثيرة" = "many people" → Include 5+ people in background
+
 ARABIC VIDEO DIRECTION PHRASES:
 - "أضف حركة للكاميرا" = "Add camera movement" → Include smooth camera motion
 - "زوم على المنتج" = "Zoom on the product" → Focus closer on the product
@@ -637,10 +665,18 @@ ARABIC VIDEO DIRECTION PHRASES:
 - "خليه يبان أحسن" = "Make it look better" → Enhance visual appeal through camera work
 
 IMPORTANT VIDEO INTERPRETATION RULES:
-1. If user mentions camera-related Arabic words like "كاميرا" (camera) or "تصوير" (filming), focus on camera movements
-2. If user mentions speed like "بطء" (slow) or "سريع" (fast), adjust the pacing accordingly
-3. If user mentions showing "من كل الجهات" (from all sides), suggest orbital or multi-angle shots
-4. Translate the EMOTION and ENERGY level, not just literal words
+1. CHECK FOR NEGATION FIRST: Words like "لا" / "بدون" / "ما في" mean DO NOT include that element
+2. If user mentions "ناس" or "أشخاص" (people) WITHOUT negation, MANDATORY: include actual human figures in the video - DO NOT interpret this as mood, atmosphere, or visual storytelling
+3. If user mentions "منبهر" or "معجب" (amazed/impressed), show people with expressions of wonder, surprise, or admiration
+4. When adding people, use EXACT quantities if specified (شخصين = exactly 2 people)
+5. If user mentions camera-related Arabic words like "كاميرا" (camera) or "تصوير" (filming), focus on camera movements
+6. If user mentions speed like "بطء" (slow) or "سريع" (fast), adjust the pacing accordingly
+7. If user mentions showing "من كل الجهات" (from all sides), suggest orbital or multi-angle shots
+8. Translate the EMOTION and ENERGY level, not just literal words
+9. NEVER interpret people requests as "visual storytelling" or "mood" - they mean literal human figures
+10. ALWAYS output your response in ENGLISH, even if the input is Arabic
+
+CRITICAL: When user requests people in Arabic ("ناس" / "أشخاص"), you MUST include actual human figures in your video brief. Do NOT interpret this as "mood", "atmosphere", "visual storytelling", or "implied presence". Include visible people with clear facial expressions and body language.
 
 1. 📹 CAMERA MOVEMENT ANALYSIS:
    - Study the composition, lighting, and spatial relationships
