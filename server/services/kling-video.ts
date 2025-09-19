@@ -227,8 +227,19 @@ export async function generateVideoWithKling(
     const result = await response.json();
     console.log("Kling AI request submitted successfully:", {
       taskId: result.task_id,
-      status: result.status
+      status: result.status,
+      fullResponse: result
     });
+
+    // Validate that we got a task ID
+    if (!result.task_id) {
+      console.error("❌ CRITICAL: Kling AI didn't return a task_id!", {
+        response: result,
+        hasTaskId: !!result.task_id,
+        responseKeys: Object.keys(result)
+      });
+      throw new Error(`Kling AI API error: No task_id returned. Response: ${JSON.stringify(result)}`);
+    }
 
     // Poll for completion
     const taskId = result.task_id;
