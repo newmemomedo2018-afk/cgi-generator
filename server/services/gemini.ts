@@ -161,26 +161,42 @@ export async function enhancePromptWithGemini(
     ]);
 
     const prompt = `
-انت خبير CGI وهاتعمل تعليمات دقيقة لتوليد الصور بالذكاء الاصطناعي.
+انت خبير CGI متقدم وهاتعمل تعليمات دقيقة لتوليد الصور بالذكاء الاصطناعي.
 
 قم بتحليل الصورتين دول بدقة:
 1. صورة المنتج: عرف اسم المنتج والبراند والشكل والالوان
-2. صورة المشهد: شوف ايه الموجود اللي هيتم استبداله والاضاءة والبيئة
+2. صورة المشهد: شوف ايه الموجود والاضاءة والبيئة
 
-المطلوب منك:
-1. امسح وشيل نهائياً المنتج الموجود - خليه يختفي تماماً
-2. حط المنتج الجديد مكانه بالضبط  
-3. خلي الاضاءة والظلال متطابقة تماماً
-4. احتفظ بكل العمارة (السقف والحيطان والارضية) زي ما هي
+المطلوب منك - تحليل ذكي للتعارضات:
 
-🚨 قواعد الشيل المهمة:
-- لازم يتشال نهائياً مش بقايا او اثار
-- المكان يتملي طبيعي او يفضى
-- التركيز على الاستبدال الكامل مش الاضافة
+🔍 خطوة 1: تحليل التعارضات الذكي
+- احلل طلب المستخدم: "${userDescription}"
+- شوف ايه العناصر الموجودة في المشهد اللي هتتعارض مع المنتج الجديد
+- امثلة للتعارضات:
+  * اضافة نجفة → شيل النباتات المعلقة أو الاضاءة الموجودة
+  * اضافة كنبة → شيل الكراسي أو الاثاث اللي في نفس المكان
+  * اضافة لوحة → شيل اللوحات الموجودة على نفس الحيطة
+  * اضافة طاولة → شيل الطاولة الموجودة أو العناصر اللي على الارض
 
-طلب المستخدم: ${userDescription}
+🗑️ خطوة 2: الشيل الذكي للعناصر المتعارضة
+1. امسح وشيل نهائياً كل العناصر المتعارضة - خليها تختفي تماماً
+2. امسح وشيل نهائياً المنتج الموجود (لو في) - خليه يختفي تماماً  
+3. خلي المكان يفضى ونظيف قبل اضافة المنتج الجديد
 
-اكتب تعليمات مباشرة بالانجليزي للذكاء الاصطناعي.
+🎯 خطوة 3: الاضافة الذكية
+1. حط المنتج الجديد في المكان المناسب ليه
+2. خلي الاضاءة والظلال متطابقة تماماً
+3. احتفظ بكل العمارة (السقف والحيطان والارضية) زي ما هي
+4. احتفظ بالعناصر اللي مش متعارضة (زي الناس، النوافذ، الديكورات البعيدة)
+
+🚨 قواعد الشيل الذكي المهمة:
+- فكر أول: ايه اللي هيتعارض مع المنتج الجديد؟
+- اشيل كل العناصر المتعارضة نهائياً (مش بقايا او اثار)
+- المكان يتملي طبيعي ونظيف قبل الاضافة
+- التركيز على الاستبدال الذكي مش مجرد اضافة فوق الموجود
+- اعمل مساحة مناسبة للمنتج الجديد
+
+اكتب تعليمات مباشرة بالانجليزي للذكاء الاصطناعي تشمل الشيل الذكي أولاً ثم الاضافة.
 
 `;
 
@@ -423,12 +439,23 @@ ANALYZE the images:
 
 USER REQUEST: "${userDescription}"
 
-🔍 CRITICAL TASK: SEPARATE the user request into TWO PHASES:
+🔍 CRITICAL TASK: INTELLIGENT CONFLICT ANALYSIS + TWO PHASES:
 
-PHASE 1 - IMAGE SCENE SETUP (Static Elements):
+PHASE 0 - SMART CONFLICT ANALYSIS:
+- Analyze user request: "${userDescription}"
+- Identify existing scene elements that CONFLICT with new product
+- Examples of conflicts:
+  * Adding chandelier → Remove hanging plants, existing lighting fixtures
+  * Adding sofa → Remove chairs or furniture in same area  
+  * Adding wall art → Remove existing paintings on same wall
+  * Adding table → Remove existing table or floor items
+- Plan REMOVAL of conflicting elements BEFORE adding new product
+
+PHASE 1 - IMAGE SCENE SETUP (Static Elements After Smart Removal):
+- FIRST: Remove ALL conflicting elements completely (no traces)
 - What objects should EXIST in the initial scene?
 - ONLY add people if explicitly mentioned in user request
-- Where should elements be POSITIONED?
+- Where should elements be POSITIONED after clearing conflicts?
 - What should the environment/lighting LOOK LIKE?
 
 PHASE 2 - VIDEO MOTION (What Changes/Moves):
@@ -515,7 +542,8 @@ You must respond with VALID JSON in this exact format:
 🚨 CRITICAL QUALITY REQUIREMENTS (Include in qualityNegativePrompt):
 - For PEOPLE: "deformed faces, distorted body proportions, extra limbs, malformed anatomy, unnatural head size"
 - For ANIMALS: "distorted animal anatomy, unnatural proportions, melting fur, deformed limbs, wrong body shape"  
-- GENERAL: "blurry, low quality, amateur CGI, morphing, melting, unnatural blending"
+- For ELEMENT CONFLICTS: "overlapping objects, floating objects, conflicting elements, objects occupying same space, duplicate furniture, multiple chandeliers, multiple of same object"
+- GENERAL: "blurry, low quality, amateur CGI, morphing, melting, unnatural blending, poor object removal, incomplete element deletion, traces of removed objects"
 
 RESPOND ONLY WITH VALID JSON - NO OTHER TEXT BEFORE OR AFTER THE JSON
 `;
