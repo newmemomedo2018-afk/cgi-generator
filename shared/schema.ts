@@ -110,7 +110,41 @@ export const insertTransactionSchema = createInsertSchema(transactions).pick({
   credits: true,
 });
 
+// Job queue table for async processing (Vercel compatibility)
+export const jobQueue = pgTable("job_queue", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: varchar("type").notNull(), // 'cgi_generation'
+  status: varchar("status", { 
+    enum: ["pending", "processing", "completed", "failed"] 
+  }).default("pending"),
+  projectId: varchar("project_id").notNull().references(() => projects.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  priority: integer("priority").notNull().default(0), // Higher = more priority
+  attempts: integer("attempts").notNull().default(0),
+  maxAttempts: integer("max_attempts").notNull().default(3),
+  progress: integer("progress").notNull().default(0), // 0-100
+  statusMessage: text("status_message"), 
+  errorMessage: text("error_message"),
+  data: jsonb("data"), // Job-specific data like contentType, paths, etc
+  result: jsonb("result"), // Final result data
+  scheduledFor: timestamp("scheduled_for").defaultNow(),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertJobSchema = createInsertSchema(jobQueue).pick({
+  type: true,
+  projectId: true,
+  userId: true,
+  data: true,
+  priority: true,
+});
+
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Project = typeof projects.$inferSelect;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type Transaction = typeof transactions.$inferSelect;
+export type InsertJob = z.infer<typeof insertJobSchema>;
+export type Job = typeof jobQueue.$inferSelect;
