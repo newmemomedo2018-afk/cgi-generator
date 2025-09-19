@@ -168,10 +168,16 @@ ANALYZE the two reference images:
 2. SCENE IMAGE: Note existing objects to be replaced, lighting conditions, environment, perspective
 
 Your task: Create DIRECT COMMANDS for the AI image generator to:
-1. REMOVE/REPLACE ONLY the specific existing products in the scene completely
-2. INSERT the exact product from the first image 
+1. COMPLETELY REMOVE AND ERASE the existing product(s) mentioned by the user - make them disappear entirely
+2. INSERT the exact product from the first image in the same location
 3. Match lighting, shadows, and perspective perfectly
 4. PRESERVE ALL architectural elements (ceiling, walls, floor) unchanged
+
+🚨 CRITICAL REMOVAL INSTRUCTIONS:
+- When removing existing objects, they must be COMPLETELY ELIMINATED from the scene
+- No traces, shadows, or remnants of the old object should remain
+- The space where the old object was should be naturally filled or empty
+- Focus on COMPLETE REPLACEMENT, not addition
 
 CRITICAL PRESERVATION RULES:
 - PRESERVE THE CEILING 100% unchanged (do not modify ceiling color, texture, height, or any ceiling elements)
@@ -180,8 +186,9 @@ CRITICAL PRESERVATION RULES:
 - PRESERVE ALL EXISTING FURNITURE 100% unchanged except for the specific item being replaced
 
 Generate a COMMAND-STYLE prompt like this example:
-"Remove ONLY the [existing object] completely from the scene and replace it with the [exact product name] from the reference image. The [product] should appear ultra-realistic in CGI style, [size description], positioned [placement details]. Make sure the lighting and shadows match the [lighting description]. Keep ALL other elements including ceiling, walls, floor, and furniture completely unchanged. The [product] should have [texture/material details], and look [style description]. Render in high resolution with cinematic composition and sharp details."
+"COMPLETELY REMOVE AND ERASE the [existing object] from the scene - eliminate it entirely with no traces remaining. Replace it with the [exact product name] from the reference image. The [product] should appear ultra-realistic in CGI style, [size description], positioned [placement details]. Make sure the lighting and shadows match the [lighting description]. Keep ALL other elements including ceiling, walls, floor, and furniture completely unchanged. The [product] should have [texture/material details], and look [style description]. Render in high resolution with cinematic composition and sharp details."
 
+🚨 REMOVAL EMPHASIS: Use strong removal language like "COMPLETELY REMOVE", "ELIMINATE ENTIRELY", "ERASE COMPLETELY", "NO TRACES REMAINING"
 🚨 IMPORTANT: Do NOT add people, humans, or characters unless EXPLICITLY requested by the user in their description. The default scene should only contain the product and environment.
 
 User Request: ${userDescription}
@@ -192,7 +199,7 @@ UNIVERSAL REQUEST INTERPRETATION RULES:
 1. ANY request from the user MUST be implemented literally in the final image
 2. If user asks to ADD something → ADD it visibly and clearly  
 3. If user asks to CHANGE something → CHANGE it exactly as requested
-4. If user asks to REMOVE something → REMOVE it completely
+4. If user asks to REMOVE something → COMPLETELY ELIMINATE it with no traces remaining
 5. If user specifies QUANTITIES → Use exact numbers (not approximate)
 6. If user specifies POSITIONS → Place elements exactly where requested
 7. If user mentions COLORS → Apply those exact colors
@@ -555,7 +562,7 @@ UNIVERSAL REQUEST INTERPRETATION RULES FOR VIDEO:
 1. ANY request from the user MUST be implemented literally in the final video
 2. If user asks to ADD something → ADD it visibly and clearly in the video
 3. If user asks to CHANGE something → CHANGE it exactly as requested
-4. If user asks to REMOVE something → REMOVE it completely from the video
+4. If user asks to REMOVE something → COMPLETELY ELIMINATE it with no traces remaining from the video
 5. If user specifies QUANTITIES → Use exact numbers (not approximate)
 6. If user specifies POSITIONS → Place elements exactly where requested in the video
 7. If user mentions COLORS → Apply those exact colors in the video
@@ -786,7 +793,7 @@ UNIVERSAL REQUEST INTERPRETATION RULES FOR VIDEO:
 1. ANY request from the user MUST be implemented literally in the final video
 2. If user asks to ADD something → ADD it visibly and clearly in the video
 3. If user asks to CHANGE something → CHANGE it exactly as requested
-4. If user asks to REMOVE something → REMOVE it completely from the video
+4. If user asks to REMOVE something → COMPLETELY ELIMINATE it with no traces remaining from the video
 5. If user specifies QUANTITIES → Use exact numbers (not approximate)
 6. If user specifies POSITIONS → Place elements exactly where requested in the video
 7. If user mentions COLORS → Apply those exact colors in the video
