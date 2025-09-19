@@ -6,6 +6,7 @@
 
 import { randomUUID } from 'crypto';
 
+
 interface KlingVideoResult {
   url: string;
   duration: number;
@@ -84,6 +85,7 @@ function getTaskId(response: any, correlationId: string): string | null {
 
   return null;
 }
+
 
 /**
  * Add audio to existing video using PiAPI Kling Sound API
@@ -369,8 +371,22 @@ export async function generateVideoWithKling(
 
     const result = await response.json();
     
+    // 🔍 CRITICAL DEBUG: Let's see exactly what getTaskId receives
+    console.log(`🔍 [${correlationId}] EXACT RESPONSE ANALYSIS:`, {
+      result: result,
+      resultType: typeof result,
+      resultJSON: JSON.stringify(result, null, 2)
+    });
+    
     // Use the resilient task_id extraction helper
     const taskId = getTaskId(result, correlationId);
+    
+    // 🔍 CRITICAL DEBUG: Let's see what getTaskId returned
+    console.log(`🔍 [${correlationId}] getTaskId RETURNED:`, {
+      taskId: taskId,
+      taskIdType: typeof taskId,
+      taskIdLength: taskId ? taskId.length : 0
+    });
     
     console.log(`✅ [${correlationId}] Kling AI request submitted successfully:`, {
       taskId: taskId,
