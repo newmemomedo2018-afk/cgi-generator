@@ -15,7 +15,7 @@ export default function Pricing() {
 
   const handlePurchase = async (packageId: string) => {
     if (!isAuthenticated) {
-      window.location.href = "/api/login";
+      window.location.href = "/login";
       return;
     }
 
@@ -25,17 +25,14 @@ export default function Pricing() {
     setPurchasingPackage(packageId);
 
     try {
-      // Create payment intent
-      const response = await apiRequest('/api/purchase-credits', {
-        method: 'POST',
-        body: JSON.stringify({
-          amount: selectedPackage.price,
-          credits: selectedPackage.credits,
-          packageId: selectedPackage.id
-        })
+      // Create payment intent using apiRequest
+      const response = await apiRequest('POST', '/api/purchase-credits', {
+        amount: selectedPackage.price,
+        credits: selectedPackage.credits,
+        packageId: selectedPackage.id
       });
 
-      const { clientSecret } = response;
+      const { clientSecret } = await response.json();
       
       // Load Stripe
       const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY!);

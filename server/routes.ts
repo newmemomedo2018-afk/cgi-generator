@@ -9,7 +9,6 @@ import { promises as fs, createReadStream, existsSync, mkdirSync } from 'fs';
 import Stripe from 'stripe';
 import path from 'path';
 import { enhancePromptWithGemini, generateImageWithGemini } from './services/gemini';
-import { ObjectStorageService, ObjectNotFoundError } from './objectStorage';
 import multer from 'multer';
 
 // AI Service Costs (in millicents USD - 1/1000 USD) - CORRECTED PRICING
@@ -103,7 +102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update product image endpoint - called after successful client upload
+  // Product image endpoint - now using Cloudinary URLs directly
   app.put('/api/product-images', isAuthenticated, async (req: any, res) => {
     try {
       const { productImageURL } = req.body;
@@ -112,16 +111,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "productImageURL is required" });
       }
 
-      const objectStorageService = new ObjectStorageService();
-      const objectPath = objectStorageService.normalizeObjectEntityPath(productImageURL);
-      
-      // Generate public URL dynamically from current request
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const imageUrl = `${baseUrl}${objectPath}`;
-      
+      // Since we're using Cloudinary, we can use the URL directly
       res.status(200).json({
-        objectPath: objectPath,
-        imageUrl: imageUrl
+        imageUrl: productImageURL,
+        success: true
       });
     } catch (error) {
       console.error("Error setting product image:", error);
@@ -129,19 +122,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve objects endpoint for uploaded files
+  // Legacy objects endpoint - redirect to Cloudinary
   app.get("/objects/:objectPath(*)", isAuthenticated, async (req, res) => {
-    const objectStorageService = new ObjectStorageService();
-    try {
-      const objectFile = await objectStorageService.getObjectEntityFile(req.path);
-      objectStorageService.downloadObject(objectFile, res);
-    } catch (error) {
-      console.error("Error serving object:", error);
-      if (error instanceof ObjectNotFoundError) {
-        return res.sendStatus(404);
-      }
-      return res.sendStatus(500);
-    }
+    // Objects are now served from Cloudinary directly
+    // This endpoint exists for backwards compatibility only
+    res.status(410).json({ 
+      message: "Objects are now served from Cloudinary. Please use the direct Cloudinary URLs.",
+      deprecated: true
+    });
   });
 
   // File serving endpoint - Public access for generated content
@@ -201,7 +189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Public files endpoint - NO authentication required for AI services  
+  // Public files endpoint - now serves from Cloudinary or local files
   app.get('/public-objects/:filePath(*)', async (req: any, res) => {
     try {
       const filePath = req.params.filePath as string;
@@ -211,15 +199,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid file path" });
       }
       
-      const objectStorageService = new ObjectStorageService();
-      const file = await objectStorageService.searchPublicObject(filePath);
-      
-      if (!file) {
-        return res.status(404).json({ message: "File not found" });
+      // For generated content, serve from /tmp directory
+      if (filePath.startsWith('uploads/')) {
+        const localFilePath = path.join('/tmp', filePath);
+        
+        if (existsSync(localFilePath)) {
+          const ext = path.extname(filePath).toLowerCase();
+          const mimeTypes: { [key: string]: string } = {
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.gif': 'image/gif',
+            '.webp': 'image/webp',
+            '.mp4': 'video/mp4',
+            '.webm': 'video/webm',
+            '.mov': 'video/quicktime'
+          };
+          
+          const contentType = mimeTypes[ext] || 'application/octet-stream';
+          res.setHeader('Content-Type', contentType);
+          res.setHeader('Cache-Control', 'public, max-age=3600');
+          
+          const fileStream = createReadStream(localFilePath);
+          fileStream.pipe(res);
+          return;
+        }
       }
       
-      // Use ObjectStorageService to download and stream the file
-      await objectStorageService.downloadObject(file, res);
+      res.status(404).json({ message: "File not found" });
     } catch (error) {
       console.error("Error serving public file:", error);
       if (!res.headersSent) {

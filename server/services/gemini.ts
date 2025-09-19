@@ -1,11 +1,11 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { ObjectStorageService } from '../objectStorage';
+// ObjectStorage removed - using Cloudinary now
 
 const genAI = new GoogleGenerativeAI(
   process.env.GEMINI_API_KEY || ""
 );
 
-const objectStorage = new ObjectStorageService();
+// ObjectStorage removed - using Cloudinary/direct file access
 
 // Function to get image from Object Storage with correct MIME type detection
 async function getImageDataFromStorage(filePath: string): Promise<{base64: string; mimeType: string}> {
@@ -104,33 +104,8 @@ async function getImageDataFromStorage(filePath: string): Promise<{base64: strin
       }
     }
     
-    // Fallback: try Object Storage for backwards compatibility
-    try {
-      let file = await objectStorage.searchPublicObject(filePath);
-      
-      if (!file) {
-        console.log("File not found in public search, trying direct object path");
-        file = await objectStorage.getObjectFile(filePath);
-      }
-      
-      const [metadata] = await file.getMetadata();
-      const mimeType = metadata.contentType || "image/jpeg";
-      
-      const buffer = await objectStorage.getFileBuffer(file);
-      const base64 = buffer.toString('base64');
-      
-      console.log("Image loaded from Object Storage:", {
-        bufferLength: buffer.length,
-        base64Length: base64.length,
-        mimeType,
-        fileName: metadata.name
-      });
-      
-      return { base64, mimeType };
-    } catch (objectStorageError) {
-      console.error("Failed to load from both local and Object Storage:", objectStorageError);
-      throw new Error(`Could not load image from: ${filePath}`);
-    }
+    // If no local file found, throw error
+    throw new Error(`Could not load image from: ${filePath}. File not found in local storage or Cloudinary.`);
   } catch (error) {
     console.error("Error getting image from storage:", error);
     throw error;
