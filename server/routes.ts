@@ -420,8 +420,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Job Processing Endpoints
-  app.post('/api/jobs/process', async (req, res) => {
+  // Job Processing Endpoints - SECURED
+  app.post('/api/jobs/process', isAuthenticated, async (req, res) => {
     try {
       const job = await storage.getNextPendingJob();
       
@@ -429,10 +429,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ message: "No pending jobs" });
       }
 
-      // Mark job as processing
+      // Atomically claim the job
+      const claimed = await storage.claimJob(job.id);
+      if (!claimed) {
+        return res.json({ message: "Job was already claimed by another worker" });
+      }
+      
+      // Update attempts
       await storage.updateJob(job.id, {
-        status: 'processing',
-        startedAt: new Date(),
         attempts: job.attempts + 1
       });
 

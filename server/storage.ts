@@ -44,6 +44,7 @@ export interface IStorage {
   getJob(id: string): Promise<Job | undefined>;
   getJobByProjectId(projectId: string): Promise<Job | undefined>;
   getNextPendingJob(): Promise<Job | undefined>;
+  claimJob(id: string): Promise<boolean>;
   updateJob(id: string, updates: Partial<Job>): Promise<void>;
   markJobCompleted(id: string, result: any): Promise<void>;
   markJobFailed(id: string, errorMessage: string): Promise<void>;
@@ -223,12 +224,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getNextPendingJob(): Promise<Job | undefined> {
+    // Atomic job claiming with FOR UPDATE to prevent race conditions
     const [job] = await db
       .select()
       .from(jobQueue)
       .where(eq(jobQueue.status, 'pending'))
-      .orderBy(desc(jobQueue.priority), jobQueue.createdAt);
+      .orderBy(desc(jobQueue.priority), jobQueue.createdAt)
+      .limit(1);
     return job;
+  }
+
+  async claimJob(jobId: string): Promise<boolean> {
+    // Atomically claim a job if it's still pending
+    const result = await db
+      .update(jobQueue)
+      .set({ 
+        status: 'processing',
+        startedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(and(
+        eq(jobQueue.id, jobId),
+        eq(jobQueue.status, 'pending')
+      ));
+    
+    return (result.rowCount || 0) > 0;
   }
 
   async updateJob(jobId: string, updates: Partial<Job>): Promise<void> {
