@@ -1,11 +1,88 @@
 /**
  * Kling AI Video Generation Service
  * Generates videos from images using Kling AI via PiAPI
+ * VERSION: 2.1.0 - Enhanced debugging and resilient task_id parsing
  */
+
+import { randomUUID } from 'crypto';
 
 interface KlingVideoResult {
   url: string;
   duration: number;
+}
+
+/**
+ * Resilient task_id extraction helper - handles various response formats
+ */
+function getTaskId(response: any, correlationId: string): string | null {
+  console.log(`🔍 [${correlationId}] Extracting task_id from response:`, {
+    responseType: typeof response,
+    hasData: response && typeof response === 'object' && 'data' in response,
+    responseKeys: response && typeof response === 'object' ? Object.keys(response) : null
+  });
+
+  // Start with the response, handle string wrapping recursively
+  let currentData = response;
+  let parseAttempts = 0;
+  const maxParseAttempts = 3;
+
+  // Keep parsing if we get JSON strings
+  while (typeof currentData === 'string' && parseAttempts < maxParseAttempts) {
+    try {
+      const parsed = JSON.parse(currentData);
+      console.log(`🔍 [${correlationId}] Parsed JSON string (attempt ${parseAttempts + 1}):`, { 
+        originalLength: currentData.length,
+        parsedType: typeof parsed,
+        parsedKeys: parsed && typeof parsed === 'object' ? Object.keys(parsed) : null
+      });
+      currentData = parsed;
+      parseAttempts++;
+    } catch (e) {
+      console.log(`🔍 [${correlationId}] Failed to parse as JSON (attempt ${parseAttempts + 1}):`, { 
+        data: currentData.substring(0, 100), 
+        error: e 
+      });
+      break;
+    }
+  }
+
+  // Now extract data wrapper if it exists
+  const finalData = (currentData && typeof currentData === 'object' && currentData.data) ? currentData.data : currentData;
+  
+  console.log(`🔍 [${correlationId}] Final data object for task_id extraction:`, {
+    finalDataType: typeof finalData,
+    finalDataKeys: finalData && typeof finalData === 'object' ? Object.keys(finalData) : null,
+    hasDataWrapper: !!(currentData && typeof currentData === 'object' && currentData.data)
+  });
+
+  // Try different possible locations for task_id
+  const possiblePaths = [
+    finalData?.task_id,           // Standard: data.task_id
+    finalData?.taskId,            // Camel case variant
+    finalData?.task?.task_id,     // Nested: data.task.task_id
+    finalData?.task?.id,          // Nested: data.task.id
+    finalData?.id,                // Simple: data.id
+    currentData?.task_id,         // Direct on original response
+    currentData?.taskId,          // Direct camelCase on original response
+  ];
+
+  for (let i = 0; i < possiblePaths.length; i++) {
+    const taskId = possiblePaths[i];
+    if (taskId && (typeof taskId === 'string' || typeof taskId === 'number') && String(taskId).length > 0) {
+      const finalTaskId = String(taskId);
+      console.log(`✅ [${correlationId}] Found task_id at path ${i}:`, { taskId: finalTaskId, path: i, originalType: typeof taskId });
+      return finalTaskId;
+    }
+  }
+
+  console.log(`❌ [${correlationId}] No task_id found in any expected location:`, {
+    possiblePaths: possiblePaths.map((p, i) => ({ index: i, value: p, type: typeof p })),
+    finalDataKeys: finalData && typeof finalData === 'object' ? Object.keys(finalData) : null,
+    finalDataType: typeof finalData,
+    parseAttempts
+  });
+
+  return null;
 }
 
 /**
@@ -19,9 +96,11 @@ async function addAudioToVideo(
   projectId?: string,
   storage?: any
 ): Promise<string> {
-  console.log("Adding audio to video via PiAPI Kling Sound...", {
+  const correlationId = randomUUID().substring(0, 8);
+  console.log(`🔧 [${correlationId}] VERSION 2.1.0 - Adding audio to video via PiAPI Kling Sound...`, {
     videoTaskId,
-    prompt: prompt.substring(0, 50) + "..."
+    prompt: prompt.substring(0, 50) + "...",
+    correlationId
   });
 
   // Create audio generation request using the correct origin_task_id method
@@ -53,26 +132,30 @@ async function addAudioToVideo(
     throw new Error(`Kling Sound API error: ${response.status} - ${errorText}`);
   }
 
+  // 🔍 Raw body logging before JSON parsing
+  const rawBody = await response.clone().text();
+  console.log(`🔍 [${correlationId}] Raw Kling Sound API response:`, {
+    contentType: response.headers.get('content-type'),
+    bodyLength: rawBody.length,
+    bodyPreview: rawBody.substring(0, 200) + (rawBody.length > 200 ? '...' : '')
+  });
+
   const result = await response.json();
   
-  // Handle different response formats from Kling AI (same as video generation)
-  const taskData = result.data || result; // New format has data wrapper
-  const taskId = taskData.task_id;
+  // Use the resilient task_id extraction helper
+  const taskId = getTaskId(result, correlationId);
   
-  console.log("Kling Sound request submitted:", {
+  console.log(`✅ [${correlationId}] Kling Sound request submitted:`, {
     taskId: taskId,
-    status: taskData.status,
-    fullResponse: result,
+    status: result?.data?.status || result?.status,
+    hasTaskId: !!taskId,
     responseFormat: result.data ? 'wrapped' : 'direct'
   });
 
   if (!taskId) {
-    console.error("❌ CRITICAL: Kling Sound API didn't return a task_id!", {
-      response: result,
-      data: result.data,
-      hasTaskId: !!taskId,
-      responseKeys: Object.keys(result),
-      dataKeys: result.data ? Object.keys(result.data) : null
+    console.error(`❌ CRITICAL [${correlationId}] Kling Sound API didn't return a task_id!`, {
+      fullResponse: JSON.stringify(result, null, 2),
+      rawBodyPreview: rawBody.substring(0, 500)
     });
     throw new Error(`Kling Sound API error: No task_id returned. Response: ${JSON.stringify(result)}`);
   }
@@ -186,10 +269,12 @@ export async function generateVideoWithKling(
   projectId?: string,
   storage?: any
 ): Promise<KlingVideoResult> {
-  console.log("Starting Kling AI video generation...", {
+  const correlationId = randomUUID().substring(0, 8);
+  console.log(`🎬 [${correlationId}] VERSION 2.1.0 - Starting Kling AI video generation...`, {
     imageUrl,
     prompt: prompt.substring(0, 100) + "...",
-    duration: durationSeconds
+    duration: durationSeconds,
+    correlationId
   });
 
   try {
@@ -274,27 +359,31 @@ export async function generateVideoWithKling(
       throw new Error(`Kling AI API error: ${response.status} - ${errorText}`);
     }
 
+    // 🔍 Raw body logging before JSON parsing
+    const rawBody = await response.clone().text();
+    console.log(`🔍 [${correlationId}] Raw Kling AI response:`, {
+      contentType: response.headers.get('content-type'),
+      bodyLength: rawBody.length,
+      bodyPreview: rawBody.substring(0, 200) + (rawBody.length > 200 ? '...' : '')
+    });
+
     const result = await response.json();
     
-    // Handle different response formats from Kling AI
-    const taskData = result.data || result; // New format has data wrapper
-    const taskId = taskData.task_id;
+    // Use the resilient task_id extraction helper
+    const taskId = getTaskId(result, correlationId);
     
-    console.log("Kling AI request submitted successfully:", {
+    console.log(`✅ [${correlationId}] Kling AI request submitted successfully:`, {
       taskId: taskId,
-      status: taskData.status,
-      fullResponse: result,
+      status: result?.data?.status || result?.status,
+      hasTaskId: !!taskId,
       responseFormat: result.data ? 'wrapped' : 'direct'
     });
 
     // Validate that we got a task ID
     if (!taskId) {
-      console.error("❌ CRITICAL: Kling AI didn't return a task_id!", {
-        response: result,
-        data: result.data,
-        hasTaskId: !!taskId,
-        responseKeys: Object.keys(result),
-        dataKeys: result.data ? Object.keys(result.data) : null
+      console.error(`❌ CRITICAL [${correlationId}] Kling AI didn't return a task_id!`, {
+        fullResponse: JSON.stringify(result, null, 2),
+        rawBodyPreview: rawBody.substring(0, 500)
       });
       throw new Error(`Kling AI API error: No task_id returned. Response: ${JSON.stringify(result)}`);
     }
