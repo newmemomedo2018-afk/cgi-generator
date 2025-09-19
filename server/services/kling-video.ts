@@ -303,8 +303,8 @@ export async function generateVideoWithKling(
     if (projectId && storage) {
       try {
         await storage.updateProject(projectId, { 
-          klingVideoTaskId: taskId,
-          includeAudio: includeAudio 
+          klingVideoTaskId: taskId
+          // Don't overwrite includeAudio - keep original user choice
         });
         console.log("✅ RECOVERY: Saved Kling video task ID for recovery:", {
           projectId,
