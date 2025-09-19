@@ -374,16 +374,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
+      let event;
+      if (process.env.STRIPE_WEBHOOK_SECRET) {
+        // Production: verify webhook signature
+        event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+      } else {
+        // Development: parse webhook without verification (UNSAFE for production)
+        console.warn('⚠️  Stripe webhook running without signature verification - development mode only!');
+        event = JSON.parse(req.body.toString());
+      }
       
       if (event.type === 'payment_intent.succeeded') {
         const paymentIntent = event.data.object;
         const { userId, credits } = paymentIntent.metadata;
         
+        console.log(`💳 Payment succeeded: User ${userId} purchased ${credits} credits`);
+        
         // Update user credits (except for admin)
         const user = await storage.getUser(userId);
         if (user && user.email !== 'admin@test.com') {
           await storage.updateUserCredits(userId, user.credits + parseInt(credits));
+          console.log(`✅ Credits updated: User ${userId} now has ${user.credits + parseInt(credits)} credits`);
         }
       }
       

@@ -1,19 +1,73 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, Star, Rocket, Crown, Building, TestTube } from "lucide-react";
+import { Check, X, Star, Rocket, Crown, Building, TestTube, CreditCard } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { loadStripe } from "@stripe/stripe-js";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Pricing() {
   const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
+  const [purchasingPackage, setPurchasingPackage] = useState<string | null>(null);
 
-  const handlePurchase = (packageType: string) => {
+  const handlePurchase = async (packageId: string) => {
     if (!isAuthenticated) {
       window.location.href = "/api/login";
       return;
     }
-    // TODO: Implement Stripe checkout
-    console.log("Purchase package:", packageType);
+
+    const selectedPackage = packages.find(pkg => pkg.id === packageId);
+    if (!selectedPackage) return;
+
+    setPurchasingPackage(packageId);
+
+    try {
+      // Create payment intent
+      const response = await apiRequest('/api/purchase-credits', {
+        method: 'POST',
+        body: JSON.stringify({
+          amount: selectedPackage.price,
+          credits: selectedPackage.credits,
+          packageId: selectedPackage.id
+        })
+      });
+
+      const { clientSecret } = response;
+      
+      // Load Stripe
+      const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY!);
+      if (!stripe) {
+        throw new Error('Failed to load Stripe');
+      }
+
+      // Redirect to Stripe checkout
+      const { error } = await stripe.confirmPayment({
+        clientSecret,
+        confirmParams: {
+          return_url: `${window.location.origin}/dashboard?payment=success`,
+        },
+      });
+
+      if (error) {
+        toast({
+          title: "خطأ في الدفع",
+          description: error.message || "حدث خطأ أثناء معالجة الدفعة",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast({
+        title: "خطأ في الدفع",
+        description: "حدث خطأ أثناء معالجة الدفعة. يرجى المحاولة مرة أخرى.",
+        variant: "destructive"
+      });
+    } finally {
+      setPurchasingPackage(null);
+    }
   };
 
   const packages = [
@@ -167,10 +221,21 @@ export default function Pricing() {
                     </ul>
                     <Button 
                       onClick={() => handlePurchase(pkg.id)}
+                      disabled={purchasingPackage === pkg.id}
                       className={pkg.popular ? "w-full gradient-button" : "w-full bg-secondary hover:bg-secondary/80"}
                       data-testid={`purchase-${pkg.id}`}
                     >
-                      اختيار الباقة
+                      {purchasingPackage === pkg.id ? (
+                        <>
+                          <CreditCard className="ml-2 h-4 w-4 animate-spin" />
+                          جاري المعالجة...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="ml-2 h-4 w-4" />
+                          اختيار الباقة
+                        </>
+                      )}
                     </Button>
                   </CardContent>
                 </Card>
