@@ -78,9 +78,11 @@ export const transactions = pgTable("transactions", {
   userId: varchar("user_id").notNull().references(() => users.id),
   amount: integer("amount").notNull(), // in cents
   credits: integer("credits").notNull(),
-  stripePaymentIntentId: varchar("stripe_payment_intent_id"),
+  stripePaymentIntentId: varchar("stripe_payment_intent_id").unique(), // UNIQUE constraint for idempotency
   status: varchar("status", { enum: ["pending", "completed", "failed"] }).default("pending"),
+  processedAt: timestamp("processed_at"), // When webhook was processed
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export type UpsertUser = typeof users.$inferInsert;
@@ -108,6 +110,9 @@ export const insertProjectSchema = createInsertSchema(projects).pick({
 export const insertTransactionSchema = createInsertSchema(transactions).pick({
   amount: true,
   credits: true,
+  stripePaymentIntentId: true,
+  status: true,
+  processedAt: true,
 });
 
 // Job queue table for async processing (Vercel compatibility)

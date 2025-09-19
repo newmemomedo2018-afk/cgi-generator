@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { loadStripe } from "@stripe/stripe-js";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { CREDIT_PACKAGES } from "@shared/constants";
 
 export default function Pricing() {
   const { isAuthenticated } = useAuth();

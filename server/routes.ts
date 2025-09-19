@@ -11,13 +11,7 @@ import path from 'path';
 import { enhancePromptWithGemini, generateImageWithGemini } from './services/gemini';
 import multer from 'multer';
 
-// AI Service Costs (in millicents USD - 1/1000 USD) - CORRECTED PRICING
-const COSTS = {
-  GEMINI_PROMPT_ENHANCEMENT: 2,   // $0.002 per request (2 millicents)
-  GEMINI_IMAGE_GENERATION: 39,    // $0.039 per request (39 millicents) - CORRECTED!
-  GEMINI_VIDEO_ANALYSIS: 3,       // $0.003 per video analysis (3 millicents)
-  VIDEO_GENERATION: 260           // $0.26 per 5s video (260 millicents) - USER'S ACTUAL COST
-} as const;
+import { COSTS, CREDIT_PACKAGES } from '@shared/constants';
 
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -362,13 +356,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Credit package definitions - matching frontend packages
-  const CREDIT_PACKAGES = {
-    tester: { credits: 100, price: 10.00, name: "Tester" },
-    starter: { credits: 250, price: 25.00, name: "Starter" },
-    pro: { credits: 550, price: 50.00, name: "Pro" },
-    business: { credits: 1200, price: 100.00, name: "Business" }
-  };
+  // Credit packages imported from shared constants
 
   // Credit purchase endpoint with package validation
   app.post('/api/purchase-credits', isAuthenticated, async (req: any, res) => {
@@ -402,11 +390,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
 
-      // Create transaction record
+      // Create transaction record with payment intent ID (amount in cents)
       const transaction = await storage.createTransaction({
         userId,
-        amount,
+        amount: Math.round(amount * 100), // Convert to cents
         credits,
+        stripePaymentIntentId: paymentIntent.id,
+        status: 'pending'
       });
 
       res.json({
@@ -524,8 +514,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Stripe webhook handler - SECURED with proper raw body parsing
-  app.post('/api/webhooks/stripe', express.raw({type: 'application/json'}), async (req, res) => {
+  // Stripe webhook handler - raw body parsing applied at app level
+  app.post('/api/webhooks/stripe', async (req, res) => {
     const sig = req.headers['stripe-signature'];
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
     
@@ -535,23 +525,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       let event;
-      const webhookSecret = 'whsec_BeQvwE4XLjStsFSMi9Bkl6Y1s8oJ1bIp'; // Using the provided webhook secret
+      const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
       
-      // Production: verify webhook signature with the actual secret
+      if (!webhookSecret) {
+        console.error('STRIPE_WEBHOOK_SECRET environment variable is not set');
+        return res.status(500).send('Webhook secret not configured');
+      }
+      
+      // Production: verify webhook signature with the environment secret
       event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
       
       if (event.type === 'payment_intent.succeeded') {
         const paymentIntent = event.data.object;
-        const { userId, credits } = paymentIntent.metadata;
+        const { userId, credits, packageId } = paymentIntent.metadata;
         
-        console.log(`💳 Payment succeeded: User ${userId} purchased ${credits} credits`);
+        if (!userId || !credits || !packageId) {
+          console.error('Missing required metadata in payment intent:', paymentIntent.id);
+          return res.status(400).send('Invalid payment metadata');
+        }
         
-        // Update user credits (except for admin)
+        console.log(`💳 Payment succeeded: User ${userId} purchased ${credits} credits (PI: ${paymentIntent.id})`);
+        
+        // IDEMPOTENCY: Check if this payment intent was already processed
+        let existingTransaction = await storage.getTransactionByPaymentIntent(paymentIntent.id);
+        if (existingTransaction && existingTransaction.status === 'completed') {
+          console.log(`⚠️ Payment intent ${paymentIntent.id} already processed, skipping credit fulfillment`);
+          return res.json({ received: true, status: 'already_processed' });
+        }
+        
+        // Validate package and amount against expected values
+        const expectedPackage = CREDIT_PACKAGES[packageId as keyof typeof CREDIT_PACKAGES];
+        if (!expectedPackage) {
+          console.error(`Invalid package ID: ${packageId} for payment intent: ${paymentIntent.id}`);
+          return res.status(400).send('Invalid package');
+        }
+        
+        const expectedAmountCents = Math.round(expectedPackage.price * 100);
+        if (paymentIntent.amount !== expectedAmountCents || 
+            parseInt(credits) !== expectedPackage.credits) {
+          console.error(`Amount/credits mismatch for PI ${paymentIntent.id}: expected ${expectedAmountCents}/${expectedPackage.credits}, got ${paymentIntent.amount}/${credits}`);
+          return res.status(400).send('Amount validation failed');
+        }
+        
+        // Update user credits (except for admin) - IDEMPOTENT
         const user = await storage.getUser(userId);
         if (user && user.email !== 'admin@test.com') {
           await storage.updateUserCredits(userId, user.credits + parseInt(credits));
           console.log(`✅ Credits updated: User ${userId} now has ${user.credits + parseInt(credits)} credits`);
         }
+        
+        // Mark transaction as completed to prevent duplicate processing
+        if (existingTransaction) {
+          await storage.updateTransaction(existingTransaction.id, { 
+            status: 'completed',
+            processedAt: new Date()
+          });
+        } else {
+          // Create transaction record if not found (shouldn't happen but safety net)
+          console.log(`⚠️ Creating transaction record for payment intent ${paymentIntent.id}`);
+          await storage.createTransaction({
+            userId,
+            amount: paymentIntent.amount,
+            credits: parseInt(credits),
+            stripePaymentIntentId: paymentIntent.id,
+            status: 'completed',
+            processedAt: new Date()
+          });
+        }
+        
+        console.log(`🎯 Idempotent credit fulfillment completed for PI: ${paymentIntent.id}`);
       }
       
       res.json({ received: true });

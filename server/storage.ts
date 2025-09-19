@@ -33,6 +33,8 @@ export interface IStorage {
   // Transaction operations
   createTransaction(transaction: Omit<InsertTransaction, "id"> & { userId: string }): Promise<Transaction>;
   getUserTransactions(userId: string): Promise<Transaction[]>;
+  getTransactionByPaymentIntent(paymentIntentId: string): Promise<Transaction | undefined>;
+  updateTransaction(id: string, updates: Partial<Transaction>): Promise<void>;
   
   // Admin operations
   getAllUsers(): Promise<User[]>;
@@ -151,7 +153,10 @@ export class DatabaseStorage implements IStorage {
   async createTransaction(transactionData: Omit<InsertTransaction, "id"> & { userId: string }): Promise<Transaction> {
     const [transaction] = await db
       .insert(transactions)
-      .values(transactionData)
+      .values({
+        ...transactionData,
+        updatedAt: new Date() // Ensure updatedAt is set
+      })
       .returning();
     return transaction;
   }
@@ -162,6 +167,24 @@ export class DatabaseStorage implements IStorage {
       .from(transactions)
       .where(eq(transactions.userId, userId))
       .orderBy(desc(transactions.createdAt));
+  }
+
+  async getTransactionByPaymentIntent(paymentIntentId: string): Promise<Transaction | undefined> {
+    const [transaction] = await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.stripePaymentIntentId, paymentIntentId));
+    return transaction;
+  }
+
+  async updateTransaction(id: string, updates: Partial<Transaction>): Promise<void> {
+    await db
+      .update(transactions)
+      .set({
+        ...updates,
+        updatedAt: new Date()
+      })
+      .where(eq(transactions.id, id));
   }
 
   // Admin operations

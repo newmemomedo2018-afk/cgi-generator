@@ -27,11 +27,11 @@ JWT_SECRET=your-secure-jwt-secret
 SESSION_SECRET=your-secure-session-secret
 ```
 
-#### تخزين الملفات
+#### تخزين الملفات (Cloudinary)
 ```
-DEFAULT_OBJECT_STORAGE_BUCKET_ID=your-bucket-id
-PRIVATE_OBJECT_DIR=/tmp
-PUBLIC_OBJECT_SEARCH_PATHS=/tmp/public
+CLOUDINARY_CLOUD_NAME=your-cloudinary-cloud-name
+CLOUDINARY_API_KEY=your-cloudinary-api-key
+CLOUDINARY_API_SECRET=your-cloudinary-api-secret
 ```
 
 #### خدمات الذكاء الاصطناعي
@@ -45,7 +45,7 @@ PIAPI_API_KEY=your-piapi-api-key
 ```
 STRIPE_SECRET_KEY=sk_live_your_stripe_secret
 VITE_STRIPE_PUBLIC_KEY=pk_live_your_stripe_public
-STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
 ```
 
 ### 3. خطوات النشر
@@ -91,7 +91,7 @@ STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
 
 ### مشكلة: "Stripe webhook fails"
 - تأكد من أن STRIPE_WEBHOOK_SECRET صحيح
-- اضبط endpoint URL في Stripe Dashboard
+- اضبط endpoint URL في Stripe Dashboard: https://cgi-generator.com/api/webhooks/stripe
 
 ## بدائل الاستضافة
 
