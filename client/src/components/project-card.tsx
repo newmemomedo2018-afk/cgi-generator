@@ -4,7 +4,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Download, Eye, Play, Clock, CheckCircle, XCircle, Loader2 } from "lucide-react";
-import VideoPlayerModal from "@/components/video-player-modal";
 import type { Project } from "@shared/schema";
 
 interface ProjectCardProps {
@@ -12,7 +11,6 @@ interface ProjectCardProps {
 }
 
 export default function ProjectCard({ project }: ProjectCardProps) {
-  const [showVideoModal, setShowVideoModal] = useState(false);
   const getStatusBadge = () => {
     switch (project.status) {
       case "pending":
@@ -77,9 +75,10 @@ export default function ProjectCard({ project }: ProjectCardProps) {
 
   const handlePreview = () => {
     if (project.contentType === "video" && project.outputVideoUrl) {
-      setShowVideoModal(true);
+      // فتح الفيديو في صفحة جديدة مباشرة (مع الحماية الأمنية)
+      window.open(project.outputVideoUrl, '_blank', 'noopener,noreferrer');
     } else if (project.outputImageUrl) {
-      window.open(project.outputImageUrl, '_blank');
+      window.open(project.outputImageUrl, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -203,17 +202,6 @@ export default function ProjectCard({ project }: ProjectCardProps) {
           </span>
         </div>
       </CardContent>
-      
-      {/* Video Player Modal for video projects */}
-      {project.contentType === "video" && project.outputVideoUrl && (
-        <VideoPlayerModal
-          isOpen={showVideoModal}
-          onClose={() => setShowVideoModal(false)}
-          videoUrl={project.outputVideoUrl}
-          title={project.title}
-          fullTaskDetails={project.fullTaskDetails} // NEW: Pass complete task details for display
-        />
-      )}
     </Card>
   );
 }
