@@ -1,0 +1,67 @@
+{
+  "task_id": "5afdd221-8da1-4488-815b-32f0385062ed",
+  "model": "kling",
+  "task_type": "video_generation",
+  "status": "completed",
+  "config": {
+    "service_mode": "",
+    "webhook_config": {
+      "endpoint": "",
+      "secret": ""
+    }
+  },
+  "input": {
+    "aspect_ratio": "16:9",
+    "cfg_scale": 0.5,
+    "duration": 5,
+    "image_url": "https://res.cloudinary.com/dqtsski2w/image/upload/v1758247195/cgi-generated/cgi-generated/generated-1758247195140-848078707.png",
+    "mode": "std",
+    "negative_prompt": "deformed, distorted, unnatural proportions, melting, morphing, blurry, low quality, amateur CGI, unnatural blending, deformed faces, distorted body proportions, extra limbs, malformed anatomy, unnatural head size, distorted animal anatomy, unnatural proportions, melting fur, deformed limbs, wrong body shape",
+    "prompt": "The video will transition between the two scenes.  In Scene 1, the camera will slowly pan around the chandelier, highlighting its design and the light it emits. In Scene 2, the camera will start with a wide shot of the entire room, then slowly zoom in on the abstract coffee table and light fixture. The green leaves in the light fixture will subtly shimmer and move gently.\n\nCamera and Production: \nPROFESSIONAL CGI VIDEO GENERATION:\n\n🎬 CINEMATOGRAPHY:\nSmooth 5-second camera movement showcasing the product with cinematic flow\n\n🎭 VISUAL NARRATIVE:\nProfessional 5-second product showcase with dynamic visual progression\n\n⏱️ TIMING: 5 seconds\n🎯 FOCUS: Maintain product prominence throughout the sequence\n💫 QUALITY: Ultra-realistic CGI with seamless motion and perfect lighting continuity\n📐 ASPECT: Professional composition with balanced framing\n✨ STYLE: Cinematic, commercial-grade video production\n\nTECHNICAL REQUIREMENTS:\n- Smooth, professional camera work\n- Consistent lighting and shadows\n- Natural product movement within scene\n- High-resolution output (1080p minimum)\n- Fluid 5-second duration\n- Commercial-quality post-production feel\n"
+  },
+  "output": {
+    "video_url": "https://storage.theapi.app/videos/290218711500709.mp4",
+    "type": "m2v_img2video",
+    "status": 99,
+    "works": [
+      {
+        "content_type": "video",
+        "status": 99,
+        "type": "m2v_img2video",
+        "cover": {
+          "resource": "https://s15-kling.klingai.com/kimg/EMXN1y8qgwEKBnVwbG9hZBIOeWxhYi1zdHVudC1zZ3AaaXNlL2FpX3BvcnRhbF9zZ3BfbTJ2X2ltZzJ2aWRlb18xMDgwcF9zdGRfdjE2X2Rpc3RpbGwvYzVkZGEwMjMtZTE0YS00OTdmLTk5OTUtZjQ3MzllZDJlZTJiX3ZpZGVvX2NvdmVyLmpwZw.origin?x-kcdn-pid=112372",
+          "resource_without_watermark": "",
+          "height": 992,
+          "width": 896,
+          "duration": 0
+        },
+        "video": {
+          "resource": "https://v15-kling.klingai.com/bs2/upload-ylab-stunt-sgp/se/ai_portal_sgp_m2v_img2video_1080p_std_v16_distill/f18588e1-a439-4677-a9ad-0fbdc86dfce8_video.mp4?x-kcdn-pid=112372",
+          "resource_without_watermark": "https://storage.theapi.app/videos/290218711500709.mp4",
+          "height": 992,
+          "width": 896,
+          "duration": 5100
+        }
+      }
+    ]
+  },
+  "meta": {
+    "created_at": "2025-09-19T02:00:03.807244889Z",
+    "started_at": "2025-09-19T02:00:04.689760921Z",
+    "ended_at": "2025-09-19T02:01:56.17249171Z",
+    "usage": {
+      "type": "point",
+      "frozen": 2600000,
+      "consume": 2600000
+    },
+    "is_using_private_pool": false
+  },
+  "detail": null,
+  "logs": null,
+  "error": {
+    "code": 0,
+    "raw_message": "",
+    "message": "",
+    "detail": null
+  }
+}
