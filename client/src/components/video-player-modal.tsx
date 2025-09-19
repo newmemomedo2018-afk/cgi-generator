@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, Volume2, VolumeX, Download, X } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Download, X, Loader2, AlertCircle } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
 interface VideoPlayerModalProps {
@@ -20,6 +20,8 @@ export default function VideoPlayerModal({
   const [isMuted, setIsMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Reset state when modal opens/closes
@@ -28,6 +30,8 @@ export default function VideoPlayerModal({
       setIsPlaying(false);
       setCurrentTime(0);
       setIsMuted(false);
+      setIsLoading(true);
+      setHasError(false);
     }
   }, [isOpen]);
 
@@ -38,15 +42,35 @@ export default function VideoPlayerModal({
 
     const updateTime = () => setCurrentTime(video.currentTime);
     const updateDuration = () => setDuration(video.duration);
+    const handleLoadedData = () => {
+      setIsLoading(false);
+      setHasError(false);
+    };
+    const handleError = () => {
+      setIsLoading(false);
+      setHasError(true);
+      console.error("Video failed to load:", videoUrl);
+    };
+    const handleLoadStart = () => {
+      setIsLoading(true);
+      setHasError(false);
+    };
+    const handleEnded = () => setIsPlaying(false);
     
     video.addEventListener('timeupdate', updateTime);
     video.addEventListener('loadedmetadata', updateDuration);
-    video.addEventListener('ended', () => setIsPlaying(false));
+    video.addEventListener('loadeddata', handleLoadedData);
+    video.addEventListener('error', handleError);
+    video.addEventListener('loadstart', handleLoadStart);
+    video.addEventListener('ended', handleEnded);
 
     return () => {
       video.removeEventListener('timeupdate', updateTime);
       video.removeEventListener('loadedmetadata', updateDuration);
-      video.removeEventListener('ended', () => setIsPlaying(false));
+      video.removeEventListener('loadeddata', handleLoadedData);
+      video.removeEventListener('error', handleError);
+      video.removeEventListener('loadstart', handleLoadStart);
+      video.removeEventListener('ended', handleEnded);
     };
   }, [isOpen]);
 
@@ -89,6 +113,7 @@ export default function VideoPlayerModal({
   };
 
   const formatTime = (time: number) => {
+    if (!Number.isFinite(time)) return "0:00";
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -125,10 +150,33 @@ export default function VideoPlayerModal({
             preload="metadata"
             data-testid="video-player"
             onClick={togglePlay}
+            crossOrigin="anonymous"
           />
 
+          {/* Loading Overlay */}
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+              <div className="flex flex-col items-center text-white">
+                <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                <p>جاري تحميل الفيديو...</p>
+              </div>
+            </div>
+          )}
+
+          {/* Error Overlay */}
+          {hasError && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+              <div className="flex flex-col items-center text-white text-center p-4">
+                <AlertCircle className="h-8 w-8 mb-2 text-red-400" />
+                <p className="mb-2">عذراً، حدث خطأ في تحميل الفيديو</p>
+                <p className="text-sm text-gray-300">يرجى المحاولة مرة أخرى لاحقاً</p>
+              </div>
+            </div>
+          )}
+
           {/* Video Controls Overlay */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4">
+          {!isLoading && !hasError && (
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4">
             {/* Progress Bar */}
             <div className="mb-4">
               <input
@@ -182,6 +230,7 @@ export default function VideoPlayerModal({
               </Button>
             </div>
           </div>
+          )}
         </div>
 
         <div className="p-6 pt-4">
