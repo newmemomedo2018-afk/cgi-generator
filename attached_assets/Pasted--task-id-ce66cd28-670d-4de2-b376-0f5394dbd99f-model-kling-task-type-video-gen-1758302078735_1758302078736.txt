@@ -1,0 +1,67 @@
+{
+  "task_id": "ce66cd28-670d-4de2-b376-0f5394dbd99f",
+  "model": "kling",
+  "task_type": "video_generation",
+  "status": "completed",
+  "config": {
+    "service_mode": "",
+    "webhook_config": {
+      "endpoint": "",
+      "secret": ""
+    }
+  },
+  "input": {
+    "aspect_ratio": "16:9",
+    "cfg_scale": 0.5,
+    "duration": 5,
+    "image_url": "https://res.cloudinary.com/dqtsski2w/image/upload/v1758301137/cgi-generated/cgi-generated/generated-1758301137090-107520803.png",
+    "mode": "std",
+    "negative_prompt": "deformed faces, distorted body proportions, extra limbs, malformed anatomy, unnatural head size, distorted animal anatomy, unnatural proportions, melting fur, deformed limbs, wrong body shape, blurry, low quality, amateur CGI, morphing, melting, unnatural blending, distorted perspectives, unrealistic lighting, lack of detail, poorly rendered textures",
+    "prompt": "The video will transition smoothly between the two scenes. In the first scene, the camera will slowly pan from the curtains to the chandelier, showcasing the light's design. It will then smoothly transition to a shot focused on the chandelier. The second scene starts with a wide shot, showcasing the whole room's luxury design. The camera then slowly focuses on the uniquely shaped coffee table, subtly highlighting its details. The video concludes with a close-up view of the green glass elements within the chandelier, emphasizing their brilliance and texture. The entire video should have smooth transitions with a calm and relaxing pacing.\n\nCamera and Production: Create a 5-second CGI video of a luxurious modern living room. The scene features a large, organically shaped, dark bronze coffee table as the centerpiece.  Surrounding it are a plush burnt orange armchair, a patterned rug, smaller accent tables, rich dark wood paneling, a large abstract bronze sculpture, and a stunning multi-ring LED chandelier adorned with flowing, green glass art pieces. Natural light streams from large floor-to-ceiling windows with sheer curtains. The ceiling is circular and multi-layered.  The camera slowly pans from the armchair, across the rug, focusing on the coffee table, highlighting its texture and form.  The chandelier's lights pulse and shimmer. The green glass art pieces gently sway.  The video should be photorealistic and cinematic, emphasizing the sophistication and elegance of the space.  Optional: add a subtle internal glow to the coffee table to enhance its unique form.  The camera movement should be smooth and deliberate."
+  },
+  "output": {
+    "video_url": "https://storage.theapi.app/videos/290272643306617.mp4",
+    "type": "m2v_img2video",
+    "status": 99,
+    "works": [
+      {
+        "content_type": "video",
+        "status": 99,
+        "type": "m2v_img2video",
+        "cover": {
+          "resource": "https://s15-kling.klingai.com/kimg/EMXN1y8qgwEKBnVwbG9hZBIOeWxhYi1zdHVudC1zZ3AaaXNlL2FpX3BvcnRhbF9zZ3BfbTJ2X2ltZzJ2aWRlb18xMDgwcF9zdGRfdjE2X2Rpc3RpbGwvMTRiZDliMTYtNDlhNy00NDIzLTgwMjYtMTg0M2RkMjI5NWI0X3ZpZGVvX2NvdmVyLmpwZw.origin?x-kcdn-pid=112372",
+          "resource_without_watermark": "",
+          "height": 992,
+          "width": 896,
+          "duration": 0
+        },
+        "video": {
+          "resource": "https://v15-kling.klingai.com/bs2/upload-ylab-stunt-sgp/se/ai_portal_sgp_m2v_img2video_1080p_std_v16_distill/5d42b725-720c-4e3a-b867-9986f1776ea5_video.mp4?x-kcdn-pid=112372",
+          "resource_without_watermark": "https://storage.theapi.app/videos/290272643306617.mp4",
+          "height": 992,
+          "width": 896,
+          "duration": 5100
+        }
+      }
+    ]
+  },
+  "meta": {
+    "created_at": "2025-09-19T16:59:06.711596183Z",
+    "started_at": "2025-09-19T16:59:06.962257008Z",
+    "ended_at": "2025-09-19T17:01:09.907141878Z",
+    "usage": {
+      "type": "point",
+      "frozen": 2600000,
+      "consume": 2600000
+    },
+    "is_using_private_pool": false
+  },
+  "detail": null,
+  "logs": null,
+  "error": {
+    "code": 0,
+    "raw_message": "",
+    "message": "",
+    "detail": null
+  }
+}

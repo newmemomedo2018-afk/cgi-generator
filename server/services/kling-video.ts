@@ -434,21 +434,21 @@ export async function generateVideoWithKling(
       });
     }
 
-    // NEW 6-MINUTE WAIT STRATEGY: Single wait + one status check to save API costs
-    console.log(`🕐 [${correlationId}] Starting 6-minute wait strategy...`, { 
+    // NEW 4-MINUTE WAIT STRATEGY: Single wait + one status check to save API costs
+    console.log(`🕐 [${correlationId}] Starting 4-minute wait strategy...`, { 
       taskId,
-      waitTime: "6 minutes (360 seconds)",
+      waitTime: "4 minutes (240 seconds)",
       previousStrategy: "60 polling calls = expensive!",
       newStrategy: "single wait + 1 API call = cost efficient!",
       estimatedSavings: "59 API calls saved!"
     });
 
-    // Wait 6 minutes for Kling AI to complete
-    await new Promise(resolve => setTimeout(resolve, 360000)); // 360 seconds = 6 minutes
+    // Wait 4 minutes for Kling AI to complete
+    await new Promise(resolve => setTimeout(resolve, 240000)); // 240 seconds = 4 minutes
     
-    console.log(`⏰ [${correlationId}] 6-minute wait completed! Making single status check...`);
+    console.log(`⏰ [${correlationId}] 4-minute wait completed! Making single status check...`);
 
-    // Single status check after 6-minute wait
+    // Single status check after 4-minute wait
     const statusResponse = await fetch(`https://api.piapi.ai/api/v1/task/${taskId}`, {
       headers: {
         'X-API-Key': klingApiKey,
@@ -492,12 +492,12 @@ export async function generateVideoWithKling(
       status: taskStatus,
       progress: taskProgress || 'N/A',
       extractedFrom: statusResult?.status ? 'direct' : statusResult?.data?.status ? 'data.status' : 'none',
-      waitTime: "6 minutes",
+      waitTime: "4 minutes",
       apiCallsUsed: 1
     });
 
     if (taskStatus === 'completed' || taskStatus === 'success') {
-      console.log(`🎬 [${correlationId}] Kling AI video generation completed after 6-minute wait!`);
+      console.log(`🎬 [${correlationId}] Kling AI video generation completed after 4-minute wait!`);
         
       // Get video URL from response
       const outputData = statusResult.output || statusResult.data?.output;
@@ -518,7 +518,7 @@ export async function generateVideoWithKling(
       console.log(`🎉 [${correlationId}] Kling AI video generation successful:`, {
         videoUrl,
         duration: durationSeconds,
-        strategy: "6-minute-wait",
+        strategy: "4-minute-wait",
         apiCallsUsed: 1,
         costSavings: "59 API calls saved!"
       });
@@ -567,18 +567,18 @@ export async function generateVideoWithKling(
       throw new Error(`Kling AI generation failed: ${errorMessage}`);
     }
 
-    // If still processing after 6 minutes, might need more time
+    // If still processing after 4 minutes, might need more time
     if (taskStatus === 'processing' || taskStatus === 'pending' || taskStatus === 'running') {
-      console.warn(`⏳ [${correlationId}] Video still processing after 6 minutes - this is unusual but can happen for complex videos`);
-      throw new Error(`Kling AI generation still processing after 6 minutes. Status: ${taskStatus}. This might need manual checking.`);
+      console.warn(`⏳ [${correlationId}] Video still processing after 4 minutes - this is unusual but can happen for complex videos`);
+      throw new Error(`Kling AI generation still processing after 4 minutes. Status: ${taskStatus}. This might need manual checking.`);
     }
     
     // Unexpected status
-    console.error(`❓ [${correlationId}] Unexpected Kling AI status after 6 minutes:`, {
+    console.error(`❓ [${correlationId}] Unexpected Kling AI status after 4 minutes:`, {
       status: taskStatus,
       fullTaskDetails: statusResult
     });
-    throw new Error(`Unexpected Kling AI status after 6 minutes: ${taskStatus}`);
+    throw new Error(`Unexpected Kling AI status after 4 minutes: ${taskStatus}`);
 
   } catch (error) {
     console.error(`❌ [${correlationId}] Kling AI video generation error:`, error);
