@@ -777,6 +777,8 @@ export async function enhanceVideoPromptFromGeneratedImage(
     const prompt = `
 🎬 PROFESSIONAL CGI VIDEO DIRECTOR ANALYSIS
 
+🚨 CRITICAL: ONLY describe what you ACTUALLY SEE in the provided image. DO NOT invent, assume, or add elements that are not clearly visible.
+
 ANALYZE this completed CGI image composition and provide EXPERT video production guidance:
 
 📋 PROJECT SPECIFICATIONS:
@@ -786,6 +788,13 @@ ANALYZE this completed CGI image composition and provide EXPERT video production
 - Product Focus: ${projectDetails.productName || 'Main product in scene'}
 
 🎯 YOUR MISSION - Create PROFESSIONAL video production instructions:
+
+🚨 VISUAL ACCURACY RULES:
+- ONLY reference elements, colors, and objects that are CLEARLY VISIBLE in the provided image
+- DO NOT mention colors, materials, or details that you cannot see directly
+- DO NOT invent or assume elements (like "green leaves" if not visible)
+- Base ALL descriptions on what is ACTUALLY shown in the image
+- If something is ambiguous or unclear, do not describe it
 
 CRITICAL USER REQUEST PROCESSING: The user request might be ANYTHING - animals, objects, people, colors, positions, lighting, emotions, etc. You MUST interpret ALL requests LITERALLY and apply them to the final video. Do NOT ignore or dismiss any user request as "mood" or "storytelling".
 
