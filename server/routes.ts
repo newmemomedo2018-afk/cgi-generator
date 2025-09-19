@@ -1096,12 +1096,15 @@ Camera and Production: ${videoEnhancement.enhancedVideoPrompt}`;
           console.log("🎬 generateVideoWithKling returned:", {
             success: !!videoResult,
             hasUrl: !!videoResult?.url,
-            videoUrl: videoResult?.url?.substring(0, 50) + "..."
+            videoUrl: videoResult?.url?.substring(0, 50) + "...",
+            hasFullTaskDetails: !!videoResult?.fullTaskDetails,
+            taskDetailsSize: videoResult?.fullTaskDetails ? JSON.stringify(videoResult.fullTaskDetails).length : 0
           });
           
-          // Only update video URL if generation succeeded
+          // Update video URL and full task details if generation succeeded
           await storage.updateProject(projectId, { 
             outputVideoUrl: videoResult.url,
+            fullTaskDetails: videoResult.fullTaskDetails || null, // NEW: Save complete task details for UI display
             progress: 95 
           });
           

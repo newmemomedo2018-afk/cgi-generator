@@ -10,6 +10,7 @@ import { randomUUID } from 'crypto';
 interface KlingVideoResult {
   url: string;
   duration: number;
+  fullTaskDetails?: any; // Include complete task details for UI display
 }
 
 /**
@@ -433,180 +434,154 @@ export async function generateVideoWithKling(
       });
     }
 
-    // Poll for completion
-    let attempts = 0;
-    const maxAttempts = 60; // 10 minutes max (10s intervals)
+    // NEW 6-MINUTE WAIT STRATEGY: Single wait + one status check to save API costs
+    console.log(`🕐 [${correlationId}] Starting 6-minute wait strategy...`, { 
+      taskId,
+      waitTime: "6 minutes (360 seconds)",
+      previousStrategy: "60 polling calls = expensive!",
+      newStrategy: "single wait + 1 API call = cost efficient!",
+      estimatedSavings: "59 API calls saved!"
+    });
+
+    // Wait 6 minutes for Kling AI to complete
+    await new Promise(resolve => setTimeout(resolve, 360000)); // 360 seconds = 6 minutes
     
-    console.log("Polling for Kling AI completion...", { taskId });
+    console.log(`⏰ [${correlationId}] 6-minute wait completed! Making single status check...`);
 
-    while (attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
-      attempts++;
+    // Single status check after 6-minute wait
+    const statusResponse = await fetch(`https://api.piapi.ai/api/v1/task/${taskId}`, {
+      headers: {
+        'X-API-Key': klingApiKey,
+      }
+    });
 
-      console.log(`Checking Kling AI status, attempt ${attempts}/${maxAttempts}...`);
-
-      // Check task status using PiAPI v1 endpoint
-      const statusResponse = await fetch(`https://api.piapi.ai/api/v1/task/${taskId}`, {
-        headers: {
-          'X-API-Key': klingApiKey,
-        }
+    if (!statusResponse.ok) {
+      const errorText = await statusResponse.text();
+      console.error(`❌ [${correlationId}] Final status check failed:`, {
+        status: statusResponse.status,
+        statusText: statusResponse.statusText,
+        error: errorText,
+        taskId: taskId
       });
-
-      if (!statusResponse.ok) {
-        const errorText = await statusResponse.text();
-        console.error("Failed to check Kling AI status:", {
-          status: statusResponse.status,
-          statusText: statusResponse.statusText,
-          error: errorText,
-          taskId: taskId,
-          attempt: attempts,
-          maxAttempts: maxAttempts
-        });
-        
-        // Parse the error response to see if it contains useful information
-        let parsedError = null;
-        try {
-          parsedError = JSON.parse(errorText);
-          console.log("Parsed Kling error response:", parsedError);
-        } catch (e) {
-          console.log("Could not parse error response as JSON:", errorText);
-        }
-        
-        // If we get HTTP 400 "failed to find task", it might be a temporary issue
-        // Try a few more times before giving up, but with longer intervals
-        if (statusResponse.status === 400 && errorText.includes("failed to find task")) {
-          console.warn(`Task not found (attempt ${attempts}/${maxAttempts}) - this might be temporary, retrying with longer interval...`);
-          
-          // Wait longer before retrying for 400 errors
-          if (attempts <= maxAttempts - 5) {
-            await new Promise(resolve => setTimeout(resolve, 15000)); // Wait 15 seconds extra
-            continue;
-          }
-        }
-        
-        // If we get persistent errors and have tried enough times, give up
-        if (attempts > 10 && (statusResponse.status === 400 || statusResponse.status === 404)) {
-          console.error(`Persistent API errors (${statusResponse.status}) after ${attempts} attempts - giving up`);
-          throw new Error(`Kling AI status check failed: HTTP ${statusResponse.status} after ${attempts} attempts. Error: ${errorText}`);
-        }
-        continue;
-      }
-
-      // 🔍 CRITICAL DEBUG: Raw status response analysis
-      const rawStatusBody = await statusResponse.clone().text();
-      console.log(`🔍 [ATTEMPT ${attempts}] Raw status response:`, {
-        contentType: statusResponse.headers.get('content-type'),
-        statusCode: statusResponse.status,
-        bodyLength: rawStatusBody.length,
-        bodyPreview: rawStatusBody.substring(0, 300) + (rawStatusBody.length > 300 ? '...' : '')
-      });
-
-      const statusResult = await statusResponse.json();
-      
-      // 🔍 CRITICAL DEBUG: Parsed status result analysis  
-      console.log(`🔍 [ATTEMPT ${attempts}] Parsed status result:`, {
-        resultType: typeof statusResult,
-        resultKeys: statusResult && typeof statusResult === 'object' ? Object.keys(statusResult) : null,
-        fullResult: JSON.stringify(statusResult, null, 2)
-      });
-      
-      // Use resilient status extraction similar to task_id
-      const taskStatus = statusResult?.status || statusResult?.data?.status;
-      const taskProgress = statusResult?.progress || statusResult?.data?.progress;
-      
-      console.log("Kling AI status update:", {
-        status: taskStatus,
-        progress: taskProgress || 'N/A',
-        extractedFrom: statusResult?.status ? 'direct' : statusResult?.data?.status ? 'data.status' : 'none'
-      });
-
-      if (taskStatus === 'completed' || taskStatus === 'success') {
-        console.log("Kling AI video generation completed!");
-        
-        // PiAPI v1 format: get video URL from multiple possible locations
-        // Check both direct and data-wrapped responses
-        const outputData = statusResult.output || statusResult.data?.output;
-        const videoUrl = outputData?.video_url || 
-                        outputData?.works?.[0]?.video?.resource_without_watermark ||
-                        outputData?.works?.[0]?.video?.resource;
-        
-        if (!videoUrl) {
-          console.error("No video URL found in completed result:", {
-            statusResult,
-            outputData,
-            hasOutput: !!outputData,
-            outputKeys: outputData ? Object.keys(outputData) : null
-          });
-          throw new Error("Video URL not found in Kling AI response");
-        }
-
-        console.log("Kling AI video generation successful:", {
-          videoUrl,
-          duration: durationSeconds,
-          attempts
-        });
-
-        // Add audio if requested
-        let finalVideoUrl = videoUrl;
-        if (includeAudio) {
-          console.log("🔊 AUDIO INTEGRATION REQUESTED:", {
-            originalVideoUrl: videoUrl,
-            prompt: prompt.substring(0, 100) + "...",
-            includeAudio: includeAudio
-          });
-          try {
-            finalVideoUrl = await addAudioToVideo(taskId, prompt, klingApiKey, projectId, storage);
-            console.log("🎵 AUDIO ADDED SUCCESSFULLY:", {
-              originalVideoUrl: videoUrl,
-              originalVideoTaskId: taskId,
-              videoWithAudioUrl: finalVideoUrl,
-              audioIntegrationSuccess: true
-            });
-          } catch (audioError) {
-            const errorMessage = audioError instanceof Error ? audioError.message : String(audioError);
-            const errorStack = audioError instanceof Error ? audioError.stack : undefined;
-            console.error("❌ AUDIO INTEGRATION FAILED:", {
-              originalVideoUrl: videoUrl,
-              audioError: errorMessage,
-              audioErrorStack: errorStack,
-              fallbackToOriginalVideo: true
-            });
-            // Continue with original video if audio fails
-          }
-        } else {
-          console.log("🔇 NO AUDIO REQUESTED - using original video only");
-        }
-
-        return {
-          url: finalVideoUrl,
-          duration: durationSeconds
-        };
-      }
-
-      if (taskStatus === 'failed' || taskStatus === 'error') {
-        console.error("Kling AI generation failed:", statusResult);
-        const errorMessage = statusResult.error || statusResult.data?.error || statusResult.message || statusResult.data?.message || 'Unknown error';
-        throw new Error(`Kling AI generation failed: ${errorMessage}`);
-      }
-
-      // Continue polling if still processing
-      if (taskStatus === 'processing' || taskStatus === 'pending' || taskStatus === 'running') {
-        console.log(`Kling AI still processing... (${taskProgress || 'N/A'})`);
-        continue;
-      }
-      
-      // Log unexpected status for debugging
-      if (taskStatus && !['completed', 'success', 'failed', 'error', 'processing', 'pending', 'running'].includes(taskStatus)) {
-        console.warn(`Unknown Kling AI status: ${taskStatus} - continuing to poll...`);
-        continue;
-      }
+      throw new Error(`Kling AI final status check failed: HTTP ${statusResponse.status}. Error: ${errorText}`);
     }
 
-    // Timeout reached
-    throw new Error(`Kling AI video generation timed out after ${maxAttempts * 10} seconds`);
+    // Get complete task details for UI display
+    const rawStatusBody = await statusResponse.clone().text();
+    console.log(`🔍 [${correlationId}] Final status response:`, {
+      contentType: statusResponse.headers.get('content-type'),
+      statusCode: statusResponse.status,
+      bodyLength: rawStatusBody.length,
+      bodyPreview: rawStatusBody.substring(0, 300) + (rawStatusBody.length > 300 ? '...' : '')
+    });
+
+    const statusResult = await statusResponse.json();
+      
+    
+    console.log(`🔍 [${correlationId}] Complete task details:`, {
+      resultType: typeof statusResult,
+      resultKeys: statusResult && typeof statusResult === 'object' ? Object.keys(statusResult) : null,
+      taskDetailsSize: JSON.stringify(statusResult).length
+    });
+    
+    // Use resilient status extraction
+    const taskStatus = statusResult?.status || statusResult?.data?.status;
+    const taskProgress = statusResult?.progress || statusResult?.data?.progress;
+    
+    console.log(`✅ [${correlationId}] Final status check result:`, {
+      status: taskStatus,
+      progress: taskProgress || 'N/A',
+      extractedFrom: statusResult?.status ? 'direct' : statusResult?.data?.status ? 'data.status' : 'none',
+      waitTime: "6 minutes",
+      apiCallsUsed: 1
+    });
+
+    if (taskStatus === 'completed' || taskStatus === 'success') {
+      console.log(`🎬 [${correlationId}] Kling AI video generation completed after 6-minute wait!`);
+        
+      // Get video URL from response
+      const outputData = statusResult.output || statusResult.data?.output;
+      const videoUrl = outputData?.video_url || 
+                      outputData?.works?.[0]?.video?.resource_without_watermark ||
+                      outputData?.works?.[0]?.video?.resource;
+      
+      if (!videoUrl) {
+        console.error(`❌ [${correlationId}] No video URL found in completed result:`, {
+          statusResult,
+          outputData,
+          hasOutput: !!outputData,
+          outputKeys: outputData ? Object.keys(outputData) : null
+        });
+        throw new Error("Video URL not found in Kling AI response");
+      }
+
+      console.log(`🎉 [${correlationId}] Kling AI video generation successful:`, {
+        videoUrl,
+        duration: durationSeconds,
+        strategy: "6-minute-wait",
+        apiCallsUsed: 1,
+        costSavings: "59 API calls saved!"
+      });
+
+      // Add audio if requested
+      let finalVideoUrl = videoUrl;
+      if (includeAudio) {
+        console.log(`🔊 [${correlationId}] AUDIO INTEGRATION REQUESTED:`, {
+          originalVideoUrl: videoUrl,
+          prompt: prompt.substring(0, 100) + "...",
+          includeAudio: includeAudio
+        });
+        try {
+          finalVideoUrl = await addAudioToVideo(taskId, prompt, klingApiKey, projectId, storage);
+          console.log(`🎵 [${correlationId}] AUDIO ADDED SUCCESSFULLY:`, {
+            originalVideoUrl: videoUrl,
+            originalVideoTaskId: taskId,
+            videoWithAudioUrl: finalVideoUrl,
+            audioIntegrationSuccess: true
+          });
+        } catch (audioError) {
+          const errorMessage = audioError instanceof Error ? audioError.message : String(audioError);
+          const errorStack = audioError instanceof Error ? audioError.stack : undefined;
+          console.error(`❌ [${correlationId}] AUDIO INTEGRATION FAILED:`, {
+            originalVideoUrl: videoUrl,
+            audioError: errorMessage,
+            audioErrorStack: errorStack,
+            fallbackToOriginalVideo: true
+          });
+          // Continue with original video if audio fails
+        }
+      } else {
+        console.log(`🔇 [${correlationId}] NO AUDIO REQUESTED - using original video only`);
+      }
+
+      return {
+        url: finalVideoUrl,
+        duration: durationSeconds,
+        fullTaskDetails: statusResult // NEW: Include complete task details for UI display
+      };
+    }
+
+    if (taskStatus === 'failed' || taskStatus === 'error') {
+      console.error(`❌ [${correlationId}] Kling AI generation failed:`, statusResult);
+      const errorMessage = statusResult.error || statusResult.data?.error || statusResult.message || statusResult.data?.message || 'Unknown error';
+      throw new Error(`Kling AI generation failed: ${errorMessage}`);
+    }
+
+    // If still processing after 6 minutes, might need more time
+    if (taskStatus === 'processing' || taskStatus === 'pending' || taskStatus === 'running') {
+      console.warn(`⏳ [${correlationId}] Video still processing after 6 minutes - this is unusual but can happen for complex videos`);
+      throw new Error(`Kling AI generation still processing after 6 minutes. Status: ${taskStatus}. This might need manual checking.`);
+    }
+    
+    // Unexpected status
+    console.error(`❓ [${correlationId}] Unexpected Kling AI status after 6 minutes:`, {
+      status: taskStatus,
+      fullTaskDetails: statusResult
+    });
+    throw new Error(`Unexpected Kling AI status after 6 minutes: ${taskStatus}`);
 
   } catch (error) {
-    console.error("Kling AI video generation error:", error);
+    console.error(`❌ [${correlationId}] Kling AI video generation error:`, error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     
     // Re-throw with more context

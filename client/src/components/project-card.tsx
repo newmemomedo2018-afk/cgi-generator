@@ -211,6 +211,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
           onClose={() => setShowVideoModal(false)}
           videoUrl={project.outputVideoUrl}
           title={project.title}
+          fullTaskDetails={project.fullTaskDetails} // NEW: Pass complete task details for display
         />
       )}
     </Card>

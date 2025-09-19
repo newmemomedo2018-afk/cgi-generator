@@ -66,6 +66,8 @@ export const projects = pgTable("projects", {
   klingVideoTaskId: varchar("kling_video_task_id"), // For video generation task
   klingSoundTaskId: varchar("kling_sound_task_id"), // For audio enhancement task
   includeAudio: boolean("include_audio").default(false), // Whether to add audio to video
+  // Full task details from Kling AI for UI display (6-minute wait strategy)
+  fullTaskDetails: jsonb("full_task_details"), // Complete Kling AI task response JSON
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

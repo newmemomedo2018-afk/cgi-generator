@@ -8,13 +8,15 @@ interface VideoPlayerModalProps {
   onClose: () => void;
   videoUrl: string;
   title: string;
+  fullTaskDetails?: any; // NEW: Full Kling AI task details for display
 }
 
 export default function VideoPlayerModal({
   isOpen,
   onClose,
   videoUrl,
-  title
+  title,
+  fullTaskDetails
 }: VideoPlayerModalProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -238,6 +240,25 @@ export default function VideoPlayerModal({
             الفيديو جاهز للتحميل أو المشاركة. يمكنك النقر على زر التشغيل لمعاينة النتيجة.
           </p>
         </div>
+
+        {/* NEW: Full Task Details Section */}
+        {fullTaskDetails && (
+          <div className="p-6 pt-0">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+              <h3 className="font-bold text-red-800 dark:text-red-200 mb-2 flex items-center">
+                🔍 تفاصيل مهمة Kling AI الكاملة
+              </h3>
+              <div className="bg-gray-100 dark:bg-gray-800 rounded p-3 max-h-96 overflow-auto" data-testid="task-details-json">
+                <pre className="text-xs text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">
+                  {JSON.stringify(fullTaskDetails, null, 2)}
+                </pre>
+              </div>
+              <p className="text-xs text-red-600 dark:text-red-400 mt-2">
+                💡 هذه البيانات الكاملة من Kling AI تُظهر كل تفاصيل إنتاج الفيديو (استراتيجية الانتظار 6 دقائق)
+              </p>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
