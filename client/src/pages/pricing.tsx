@@ -1,13 +1,11 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, Star, Rocket, Crown, Building } from "lucide-react";
+import { Check, X, Star, Rocket, Crown, Building, TestTube } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function Pricing() {
   const { isAuthenticated } = useAuth();
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
 
   const handlePurchase = (packageType: string) => {
     if (!isAuthenticated) {
@@ -20,16 +18,32 @@ export default function Pricing() {
 
   const packages = [
     {
+      id: "tester",
+      name: "التيستر",
+      icon: <TestTube className="h-8 w-8" />,
+      price: 10,
+      credits: 100,
+      features: [
+        "100 كريدت",
+        "صور CGI عالية الجودة (1024x1024)",
+        "فيديوهات قصيرة (5 ثواني)",
+        "دعم فني عبر الإيميل",
+        "صالح لمدة 6 أشهر",
+      ],
+      popular: false,
+    },
+    {
       id: "starter",
       name: "المبتدئ",
       icon: <Rocket className="h-8 w-8" />,
-      price: billingCycle === "monthly" ? 9.99 : 99.99,
-      credits: billingCycle === "monthly" ? 10 : 120,
+      price: 25,
+      credits: 250,
       features: [
-        "10 كريدت شهرياً",
-        "صور CGI بجودة HD",
-        "فيديوهات 5 ثواني",
-        "دعم فني عبر الإيميل",
+        "250 كريدت",
+        "صور CGI عالية الجودة (1024x1024)",
+        "فيديوهات قصيرة وطويلة",
+        "دعم فني سريع",
+        "صالح لمدة 6 أشهر",
       ],
       popular: false,
     },
@@ -37,40 +51,43 @@ export default function Pricing() {
       id: "pro",
       name: "المحترف",
       icon: <Star className="h-8 w-8" />,
-      price: billingCycle === "monthly" ? 39.99 : 399.99,
-      credits: billingCycle === "monthly" ? 50 : 600,
+      price: 50,
+      credits: 550,
       features: [
-        "50 كريدت شهرياً",
-        "صور CGI بجودة 4K",
-        "فيديوهات 10 ثواني",
+        "550 كريدت (10% مجاناً)",
+        "صور CGI عالية الجودة (1024x1024)",
+        "فيديوهات بدون حدود",
         "أولوية في المعالجة",
         "دعم فني متقدم",
+        "صالح لمدة 12 شهر",
       ],
       popular: true,
     },
     {
-      id: "enterprise",
-      name: "المؤسسات",
+      id: "business",
+      name: "الأعمال",
       icon: <Building className="h-8 w-8" />,
-      price: billingCycle === "monthly" ? 149.99 : 1499.99,
-      credits: billingCycle === "monthly" ? 200 : 2400,
+      price: 100,
+      credits: 1200,
       features: [
-        "200 كريدت شهرياً",
-        "جودة إنتاج سينمائية",
-        "فيديوهات 30 ثانية",
-        "API مخصص",
-        "مدير حساب مخصص",
+        "1200 كريدت (20% مجاناً)",
+        "صور CGI عالية الجودة (1024x1024)",
+        "فيديوهات بدون حدود",
+        "معالجة فورية",
+        "دعم فني مخصص",
+        "صالح لمدة 12 شهر",
       ],
       popular: false,
     },
   ];
 
   const features = [
-    { name: "الكريدت الشهري", starter: "10", pro: "50", enterprise: "200" },
-    { name: "دقة الصور", starter: "HD", pro: "4K", enterprise: "8K" },
-    { name: "طول الفيديو", starter: "5 ثواني", pro: "10 ثواني", enterprise: "30 ثانية" },
-    { name: "أولوية المعالجة", starter: false, pro: true, enterprise: true },
-    { name: "API Access", starter: false, pro: false, enterprise: true },
+    { name: "عدد الكريدت", tester: "100", starter: "250", pro: "550", business: "1200" },
+    { name: "دقة الصور", tester: "1024x1024", starter: "1024x1024", pro: "1024x1024", business: "1024x1024" },
+    { name: "الصور", tester: "2 كريدت", starter: "2 كريدت", pro: "2 كريدت", business: "2 كريدت" },
+    { name: "الفيديوهات القصيرة (5s)", tester: "10 كريدت", starter: "10 كريدت", pro: "10 كريدت", business: "10 كريدت" },
+    { name: "الفيديوهات الطويلة (10s)", tester: "18 كريدت", starter: "18 كريدت", pro: "18 كريدت", business: "18 كريدت" },
+    { name: "أولوية المعالجة", tester: false, starter: false, pro: true, business: true },
   ];
 
   return (
@@ -112,29 +129,16 @@ export default function Pricing() {
               <h2 className="text-4xl font-bold mb-4">باقات الأسعار</h2>
               <p className="text-xl text-muted-foreground mb-8">اختر الباقة المناسبة لاحتياجاتك</p>
               
-              {/* Billing Toggle */}
-              <div className="flex items-center justify-center space-x-reverse space-x-4 mb-8">
-                <span className={billingCycle === "monthly" ? "text-white" : "text-muted-foreground"}>شهري</span>
-                <button
-                  onClick={() => setBillingCycle(billingCycle === "monthly" ? "yearly" : "monthly")}
-                  className="relative inline-flex h-6 w-11 items-center rounded-full bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                  data-testid="billing-toggle"
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      billingCycle === "yearly" ? "translate-x-6" : "translate-x-1"
-                    }`}
-                  />
-                </button>
-                <span className={billingCycle === "yearly" ? "text-white" : "text-muted-foreground"}>
-                  سنوي
-                  <Badge className="mr-2 bg-green-500">وفر 17%</Badge>
-                </span>
+              {/* Credit Packages Description */}
+              <div className="text-center mb-8">
+                <p className="text-lg text-muted-foreground">
+                  اشتري كريدت واستخدمها متى شئت - صالحة لمدة 6-12 شهر
+                </p>
               </div>
             </div>
 
             {/* Pricing Cards */}
-            <div className="grid md:grid-cols-3 gap-8 mb-12">
+            <div className="grid md:grid-cols-4 gap-8 mb-12">
               {packages.map((pkg) => (
                 <Card 
                   key={pkg.id}
@@ -150,7 +154,7 @@ export default function Pricing() {
                     <div className="mx-auto mb-4 text-primary">{pkg.icon}</div>
                     <CardTitle className="text-2xl">{pkg.name}</CardTitle>
                     <div className="text-4xl font-bold mb-2">${pkg.price}</div>
-                    <p className="text-muted-foreground">{billingCycle === "monthly" ? "شهرياً" : "سنوياً"}</p>
+                    <p className="text-muted-foreground">لمرة واحدة</p>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <ul className="space-y-3">
@@ -184,15 +188,27 @@ export default function Pricing() {
                     <thead>
                       <tr className="border-b border-border">
                         <th className="p-4 text-right">المميزة</th>
+                        <th className="p-4">التيستر</th>
                         <th className="p-4">المبتدئ</th>
                         <th className="p-4">المحترف</th>
-                        <th className="p-4">المؤسسات</th>
+                        <th className="p-4">الأعمال</th>
                       </tr>
                     </thead>
                     <tbody>
                       {features.map((feature, index) => (
                         <tr key={index} className="border-b border-border">
                           <td className="p-4 font-medium">{feature.name}</td>
+                          <td className="p-4 text-center">
+                            {typeof feature.tester === "boolean" ? (
+                              feature.tester ? (
+                                <Check className="h-4 w-4 text-primary mx-auto" />
+                              ) : (
+                                <X className="h-4 w-4 text-destructive mx-auto" />
+                              )
+                            ) : (
+                              feature.tester
+                            )}
+                          </td>
                           <td className="p-4 text-center">
                             {typeof feature.starter === "boolean" ? (
                               feature.starter ? (
@@ -216,14 +232,14 @@ export default function Pricing() {
                             )}
                           </td>
                           <td className="p-4 text-center">
-                            {typeof feature.enterprise === "boolean" ? (
-                              feature.enterprise ? (
+                            {typeof feature.business === "boolean" ? (
+                              feature.business ? (
                                 <Check className="h-4 w-4 text-primary mx-auto" />
                               ) : (
                                 <X className="h-4 w-4 text-destructive mx-auto" />
                               )
                             ) : (
-                              feature.enterprise
+                              feature.business
                             )}
                           </td>
                         </tr>
@@ -249,19 +265,19 @@ export default function Pricing() {
                       </svg>
                     </summary>
                     <p className="mt-4 text-muted-foreground">
-                      نظام الكريدت هو طريقة بسيطة للدفع مقابل استخدام خدمات CGI. كل صورة تكلف كريدت واحد، وكل فيديو يكلف 5 كريدت.
+نظام الكريدت هو طريقة بسيطة للدفع مقابل استخدام خدمات CGI. كل صورة تكلف 2 كريدت، وكل فيديو قصير يكلف 10 كريدت، والفيديو الطويل يكلف 18 كريدت.
                     </p>
                   </details>
                   
                   <details className="group">
                     <summary className="flex items-center justify-between cursor-pointer">
-                      <span className="font-medium">هل يمكنني إلغاء اشتراكي في أي وقت؟</span>
+                      <span className="font-medium">هل تنتهي صلاحية الكريدت؟</span>
                       <svg className="w-5 h-5 transition-transform group-open:rotate-180" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                       </svg>
                     </summary>
                     <p className="mt-4 text-muted-foreground">
-                      نعم، يمكنك إلغاء اشتراكك في أي وقت من لوحة التحكم. ستحتفظ بالكريدت المتبقي حتى نهاية فترة الفوترة الحالية.
+الكريدت صالح لمدة 6 أشهر للباقات الصغيرة، و12 شهر للباقات الكبيرة. لا يوجد اشتراك شهري - تشتري الكريدت مرة واحدة وتستخدمه عند الحاجة.
                     </p>
                   </details>
                   

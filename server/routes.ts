@@ -12,12 +12,12 @@ import { enhancePromptWithGemini, generateImageWithGemini } from './services/gem
 import { ObjectStorageService, ObjectNotFoundError } from './objectStorage';
 import multer from 'multer';
 
-// AI Service Costs (in millicents USD - 1/1000 USD)
+// AI Service Costs (in millicents USD - 1/1000 USD) - CORRECTED PRICING
 const COSTS = {
   GEMINI_PROMPT_ENHANCEMENT: 2,   // $0.002 per request (2 millicents)
-  GEMINI_IMAGE_GENERATION: 2,     // $0.002 per request (2 millicents)
-  GEMINI_VIDEO_ANALYSIS: 3,       // $0.003 per video analysis (3 millicents) - NEW
-  VIDEO_GENERATION: 130           // $0.13 per video (130 millicents) - Updated for Kling AI
+  GEMINI_IMAGE_GENERATION: 39,    // $0.039 per request (39 millicents) - CORRECTED!
+  GEMINI_VIDEO_ANALYSIS: 3,       // $0.003 per video analysis (3 millicents)
+  VIDEO_GENERATION: 260           // $0.26 per 5s video (260 millicents) - USER'S ACTUAL COST
 } as const;
 
 
@@ -276,7 +276,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      const creditsNeeded = projectData.contentType === "image" ? 1 : 5; // 5 for video
+      const creditsNeeded = projectData.contentType === "image" ? 2 : 10; // New credit system: 2 for image, 10 for video
       const isAdmin = user.email === 'admin@test.com';
       
       if (!isAdmin && user.credits < creditsNeeded) {
