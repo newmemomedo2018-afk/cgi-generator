@@ -522,8 +522,9 @@ USER REQUEST: "${userDescription}"
 🔍 CRITICAL TASK: SEPARATE the user request into TWO PHASES:
 
 PHASE 1 - IMAGE SCENE SETUP (Static Elements):
-- What objects/people should EXIST in the initial scene?
-- Where should they be POSITIONED?
+- What objects should EXIST in the initial scene?
+- ONLY add people if explicitly mentioned in user request
+- Where should elements be POSITIONED?
 - What should the environment/lighting LOOK LIKE?
 
 PHASE 2 - VIDEO MOTION (What Changes/Moves):
@@ -556,6 +557,8 @@ UNIVERSAL REQUEST INTERPRETATION RULES FOR VIDEO:
 7. If user mentions COLORS → Apply those exact colors in the video
 8. If user describes EMOTIONS/EXPRESSIONS → Show them clearly on faces throughout the video
 9. NEVER interpret requests as "abstract concepts" - make them VISIBLE and CONCRETE in the video
+10. 🚨 CRITICAL: NEVER add people, humans, or characters unless EXPLICITLY mentioned in user request
+11. 🚨 DEFAULT SCENE: Product + Environment ONLY (no people unless requested)
 
 CRITICAL ARABIC LANGUAGE SUPPORT: The user request might be in Arabic. You MUST understand and interpret Arabic properly:
 
@@ -785,6 +788,8 @@ UNIVERSAL REQUEST INTERPRETATION RULES FOR VIDEO:
 7. If user mentions COLORS → Apply those exact colors in the video
 8. If user describes EMOTIONS/EXPRESSIONS → Show them clearly on faces throughout the video
 9. NEVER interpret requests as "abstract concepts" - make them VISIBLE and CONCRETE in the video
+10. 🚨 CRITICAL: NEVER add people, humans, or characters unless EXPLICITLY mentioned in user request
+11. 🚨 DEFAULT SCENE: Product + Environment ONLY (no people unless requested)
 
 CRITICAL ARABIC LANGUAGE SUPPORT: The user vision might be in Arabic. You MUST understand and interpret Arabic properly:
 
