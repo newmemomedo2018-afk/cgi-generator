@@ -303,10 +303,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateUserCredits(userId, user.credits - creditsNeeded);
       }
 
-      // Start CGI generation process asynchronously
-      processProject(project.id).catch(console.error);
+      // Create job for async processing (Vercel compatible)
+      const job = await storage.createJob({
+        type: 'cgi_generation',
+        projectId: project.id,
+        userId: userId,
+        data: {
+          contentType: projectData.contentType,
+          videoDurationSeconds: projectData.videoDurationSeconds,
+          productImageUrl: projectData.productImageUrl,
+          sceneImageUrl: projectData.sceneImageUrl,
+          sceneVideoUrl: projectData.sceneVideoUrl,
+          description: projectData.description
+        },
+        priority: projectData.contentType === 'video' ? 2 : 1 // Videos have higher priority
+      });
 
-      res.json(project);
+      console.log(`🎯 Job created for project ${project.id}: ${job.id}`);
+
+      res.json({
+        ...project,
+        jobId: job.id
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid project data", errors: error.errors });
@@ -325,7 +343,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Project not found" });
       }
 
-      res.json(project);
+      // Also get job status for this project
+      const job = await storage.getJobByProjectId(project.id);
+
+      res.json({
+        ...project,
+        job: job ? {
+          id: job.id,
+          status: job.status,
+          progress: job.progress,
+          statusMessage: job.statusMessage,
+          errorMessage: job.errorMessage
+        } : null
+      });
     } catch (error) {
       console.error("Error fetching project:", error);
       res.status(500).json({ message: "Failed to fetch project" });
@@ -387,6 +417,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating payment:", error);
       res.status(500).json({ message: "Failed to create payment" });
+    }
+  });
+
+  // Job Processing Endpoints
+  app.post('/api/jobs/process', async (req, res) => {
+    try {
+      const job = await storage.getNextPendingJob();
+      
+      if (!job) {
+        return res.json({ message: "No pending jobs" });
+      }
+
+      // Mark job as processing
+      await storage.updateJob(job.id, {
+        status: 'processing',
+        startedAt: new Date(),
+        attempts: job.attempts + 1
+      });
+
+      console.log(`🚀 Processing job ${job.id} for project ${job.projectId}`);
+      
+      // Process the job asynchronously
+      processJobAsync(job.id).catch(async (error) => {
+        console.error(`❌ Job ${job.id} failed:`, error);
+        await storage.markJobFailed(job.id, error.message);
+      });
+
+      res.json({ 
+        message: "Job processing started",
+        jobId: job.id,
+        projectId: job.projectId
+      });
+    } catch (error) {
+      console.error("Error processing job:", error);
+      res.status(500).json({ error: "Failed to process job" });
+    }
+  });
+
+  // Job Status Polling
+  app.get('/api/jobs/:id/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const job = await storage.getJob(req.params.id);
+      
+      if (!job) {
+        return res.status(404).json({ error: "Job not found" });
+      }
+
+      // Verify user owns this job
+      if (job.userId !== req.user.id) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      res.json({
+        id: job.id,
+        status: job.status,
+        progress: job.progress,
+        statusMessage: job.statusMessage,
+        errorMessage: job.errorMessage,
+        result: job.result,
+        createdAt: job.createdAt,
+        completedAt: job.completedAt
+      });
+    } catch (error) {
+      console.error("Error fetching job status:", error);
+      res.status(500).json({ error: "Failed to fetch job status" });
+    }
+  });
+
+  // Project Status with Job Info
+  app.get('/api/projects/:id/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const project = await storage.getProject(req.params.id);
+      
+      if (!project || project.userId !== userId) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      const job = await storage.getJobByProjectId(project.id);
+
+      res.json({
+        project: {
+          id: project.id,
+          status: project.status,
+          progress: project.progress,
+          outputImageUrl: project.outputImageUrl,
+          outputVideoUrl: project.outputVideoUrl,
+          errorMessage: project.errorMessage
+        },
+        job: job ? {
+          id: job.id,
+          status: job.status,
+          progress: job.progress,
+          statusMessage: job.statusMessage,
+          errorMessage: job.errorMessage
+        } : null
+      });
+    } catch (error) {
+      console.error("Error fetching project status:", error);
+      res.status(500).json({ error: "Failed to fetch project status" });
     }
   });
 
@@ -789,8 +919,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   return httpServer;
 }
 
-// Async function to process CGI projects
-async function processProject(projectId: string) {
+// NEW: Job-based async processor for Vercel compatibility
+async function processJobAsync(jobId: string) {
+  try {
+    const job = await storage.getJob(jobId);
+    if (!job) {
+      throw new Error(`Job ${jobId} not found`);
+    }
+
+    const projectId = job.projectId;
+    console.log(`🎯 Processing job ${jobId} for project ${projectId}`);
+
+    // Process the project using the original logic
+    await processProjectFromJob(job);
+    
+    console.log(`✅ Job ${jobId} completed successfully`);
+  } catch (error) {
+    console.error(`❌ Job ${jobId} failed:`, error);
+    throw error;
+  }
+}
+
+// Updated process function that works with job data
+async function processProjectFromJob(job: any) {
+  const projectId = job.projectId;
+  const jobData = job.data;
   let totalCostMillicents = 0; // Track actual API costs in millicents (1/1000 USD)
   
   try {
@@ -808,16 +961,26 @@ async function processProject(projectId: string) {
       throw new Error("Project not found");
     }
 
-    // Update status to processing
+    // Update both project and job status
     await storage.updateProject(projectId, { 
       status: "processing", 
       progress: 10 
+    });
+    
+    await storage.updateJob(job.id, {
+      progress: 10,
+      statusMessage: "Starting CGI processing..."
     });
 
     // Step 1: Enhance prompt with Gemini AI
     await storage.updateProject(projectId, { 
       status: "enhancing_prompt", 
       progress: 25 
+    });
+    
+    await storage.updateJob(job.id, {
+      progress: 25,
+      statusMessage: "Enhancing prompt with AI..."
     });
 
     // Helper function to extract relative path from full URL
@@ -834,10 +997,10 @@ async function processProject(projectId: string) {
       }
     };
 
-    // Extract relative paths for Object Storage
-    const productImagePath = extractRelativePath(project.productImageUrl || "");
-    const sceneImagePath = extractRelativePath(project.sceneImageUrl || "");
-    const sceneVideoPath = extractRelativePath(project.sceneVideoUrl || "");
+    // Use paths from job data or fallback to project data
+    const productImagePath = jobData.productImageUrl || project.productImageUrl || "";
+    const sceneImagePath = jobData.sceneImageUrl || project.sceneImageUrl || "";
+    const sceneVideoPath = jobData.sceneVideoUrl || project.sceneVideoUrl || "";
     
     console.log("Media paths for Gemini:", { 
       productImagePath, 
@@ -1174,10 +1337,21 @@ Camera and Production: ${videoEnhancement.enhancedVideoPrompt}`;
     // Mark as completed and update actual cost
     console.log(`Total actual cost for project ${projectId}: $${(totalCostMillicents / 1000).toFixed(4)} (${totalCostMillicents} millicents)`);
     
+    const finalImageUrl = imageResult?.url || null;
+    const finalVideoUrl = project.contentType === "video" ? project.outputVideoUrl : null;
+    
     await storage.updateProject(projectId, { 
       status: "completed", 
       progress: 100,
       actualCost: totalCostMillicents
+    });
+
+    // Mark job as completed with results
+    await storage.markJobCompleted(job.id, {
+      outputImageUrl: finalImageUrl,
+      outputVideoUrl: finalVideoUrl,
+      totalCost: totalCostMillicents,
+      costInUSD: (totalCostMillicents / 1000).toFixed(4)
     });
 
     console.log(`CGI processing completed for project ${projectId}`);
@@ -1191,5 +1365,8 @@ Camera and Production: ${videoEnhancement.enhancedVideoPrompt}`;
       errorMessage: error instanceof Error ? error.message : "Unknown error",
       actualCost: totalCostMillicents
     });
+    
+    // Mark job as failed
+    await storage.markJobFailed(job.id, error instanceof Error ? error.message : "Unknown error");
   }
 }

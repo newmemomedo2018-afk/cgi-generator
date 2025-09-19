@@ -2,15 +2,18 @@ import {
   users,
   projects,
   transactions,
+  jobQueue,
   type User,
   type UpsertUser,
   type Project,
   type InsertProject,
   type Transaction,
   type InsertTransaction,
+  type Job,
+  type InsertJob,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, count, sql } from "drizzle-orm";
+import { eq, desc, count, sql, and } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (for JWT Auth)
@@ -35,6 +38,15 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   getAllProjects(): Promise<Project[]>;
   getPlatformStats(): Promise<any>;
+  
+  // Job Queue operations
+  createJob(job: Omit<InsertJob, "id">): Promise<Job>;
+  getJob(id: string): Promise<Job | undefined>;
+  getJobByProjectId(projectId: string): Promise<Job | undefined>;
+  getNextPendingJob(): Promise<Job | undefined>;
+  updateJob(id: string, updates: Partial<Job>): Promise<void>;
+  markJobCompleted(id: string, result: any): Promise<void>;
+  markJobFailed(id: string, errorMessage: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -182,6 +194,72 @@ export class DatabaseStorage implements IStorage {
       completedProjects: completedProjects?.count || 0,
       totalTransactions: transactionCount?.count || 0,
     };
+  }
+
+  // Job Queue operations
+  async createJob(jobData: Omit<InsertJob, "id">): Promise<Job> {
+    const [job] = await db
+      .insert(jobQueue)
+      .values(jobData as any)
+      .returning();
+    return job;
+  }
+
+  async getJob(jobId: string): Promise<Job | undefined> {
+    const [job] = await db
+      .select()
+      .from(jobQueue)
+      .where(eq(jobQueue.id, jobId));
+    return job;
+  }
+
+  async getJobByProjectId(projectId: string): Promise<Job | undefined> {
+    const [job] = await db
+      .select()
+      .from(jobQueue)
+      .where(eq(jobQueue.projectId, projectId))
+      .orderBy(desc(jobQueue.createdAt));
+    return job;
+  }
+
+  async getNextPendingJob(): Promise<Job | undefined> {
+    const [job] = await db
+      .select()
+      .from(jobQueue)
+      .where(eq(jobQueue.status, 'pending'))
+      .orderBy(desc(jobQueue.priority), jobQueue.createdAt);
+    return job;
+  }
+
+  async updateJob(jobId: string, updates: Partial<Job>): Promise<void> {
+    await db
+      .update(jobQueue)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(jobQueue.id, jobId));
+  }
+
+  async markJobCompleted(jobId: string, result: any): Promise<void> {
+    await db
+      .update(jobQueue)
+      .set({
+        status: 'completed',
+        result: result,
+        completedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(jobQueue.id, jobId));
+  }
+
+  async markJobFailed(jobId: string, errorMessage: string): Promise<void> {
+    await db
+      .update(jobQueue)
+      .set({
+        status: 'failed',
+        errorMessage: errorMessage,
+        completedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(jobQueue.id, jobId));
   }
 }
 
