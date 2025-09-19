@@ -580,6 +580,177 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 🚨 RECOVERY SYSTEM: Endpoint to recover "failed" projects that actually completed on Kling's side
+  app.post("/api/projects/recover", isAuthenticated, async (req: any, res: any) => {
+    try {
+      const userId = req.user.id;
+      console.log("🔄 RECOVERY: Starting recovery process for user:", userId);
+
+      // Find projects that might need recovery:
+      // 1. Status is "failed" or "processing" 
+      // 2. Have Kling task IDs saved (klingVideoTaskId or klingSoundTaskId)
+      const userProjects = await storage.getUserProjects(userId);
+      const recoverableProjects = userProjects.filter(project => 
+        (project.status === "failed" || project.status === "processing") &&
+        (project.klingVideoTaskId || project.klingSoundTaskId)
+      );
+
+      console.log("🔍 RECOVERY: Found projects for potential recovery:", {
+        total: userProjects.length,
+        recoverable: recoverableProjects.length,
+        recoverableIds: recoverableProjects.map(p => p.id)
+      });
+
+      if (recoverableProjects.length === 0) {
+        return res.json({ 
+          message: "No projects found for recovery",
+          recovered: 0,
+          total: 0
+        });
+      }
+
+      const klingApiKey = process.env.KLING_API_KEY;
+      if (!klingApiKey) {
+        throw new Error("KLING_API_KEY environment variable is required");
+      }
+
+      let recoveredCount = 0;
+      const recoveryResults = [];
+
+      // Check each recoverable project
+      for (const project of recoverableProjects) {
+        console.log("🔎 RECOVERY: Checking project:", {
+          projectId: project.id,
+          title: project.title,
+          status: project.status,
+          hasVideoTaskId: !!project.klingVideoTaskId,
+          hasSoundTaskId: !!project.klingSoundTaskId
+        });
+
+        try {
+          let recovered = false;
+          let videoUrl = project.outputVideoUrl;
+          
+          // Check video task if exists
+          if (project.klingVideoTaskId && !project.outputVideoUrl) {
+            console.log("🎬 RECOVERY: Checking video task:", project.klingVideoTaskId);
+            
+            const videoStatusResponse = await fetch(`https://api.piapi.ai/api/v1/task/${project.klingVideoTaskId}`, {
+              headers: { 'X-API-Key': klingApiKey }
+            });
+            
+            if (videoStatusResponse.ok) {
+              const videoResult = await videoStatusResponse.json();
+              const videoData = videoResult.data || videoResult;
+              
+              console.log("📺 RECOVERY: Video task status:", {
+                taskId: project.klingVideoTaskId,
+                status: videoData.status,
+                hasOutput: !!videoData.output
+              });
+              
+              if (videoData.status === 'completed' && videoData.output) {
+                videoUrl = videoData.output;
+                recovered = true;
+                console.log("✅ RECOVERY: Found completed video:", videoUrl);
+              }
+            }
+          }
+          
+          // Check audio task if exists and video was found
+          if (project.klingSoundTaskId && videoUrl && project.includeAudio) {
+            console.log("🔊 RECOVERY: Checking audio task:", project.klingSoundTaskId);
+            
+            const audioStatusResponse = await fetch(`https://api.piapi.ai/api/v1/task/${project.klingSoundTaskId}`, {
+              headers: { 'X-API-Key': klingApiKey }
+            });
+            
+            if (audioStatusResponse.ok) {
+              const audioResult = await audioStatusResponse.json();
+              const audioData = audioResult.data || audioResult;
+              
+              console.log("🎵 RECOVERY: Audio task status:", {
+                taskId: project.klingSoundTaskId,
+                status: audioData.status,
+                hasOutput: !!audioData.output
+              });
+              
+              if (audioData.status === 'completed' && audioData.output) {
+                videoUrl = audioData.output; // Audio task returns video with audio
+                recovered = true;
+                console.log("✅ RECOVERY: Found completed video with audio:", videoUrl);
+              }
+            }
+          }
+          
+          // Update project if we found completed content
+          if (recovered && videoUrl) {
+            await storage.updateProject(project.id, {
+              status: "completed",
+              outputVideoUrl: videoUrl,
+              progress: 100,
+              errorMessage: null // Clear error message
+            });
+            
+            recoveredCount++;
+            recoveryResults.push({
+              projectId: project.id,
+              title: project.title,
+              status: "recovered",
+              videoUrl: videoUrl
+            });
+            
+            console.log("🎉 RECOVERY SUCCESS:", {
+              projectId: project.id,
+              title: project.title,
+              videoUrl: videoUrl.substring(0, 50) + "..."
+            });
+          } else {
+            recoveryResults.push({
+              projectId: project.id,
+              title: project.title,
+              status: "still_processing_or_failed",
+              reason: !videoUrl ? "No completed video found" : "Unknown issue"
+            });
+          }
+          
+        } catch (recoveryError) {
+          console.error("❌ RECOVERY ERROR for project:", {
+            projectId: project.id,
+            error: recoveryError instanceof Error ? recoveryError.message : "Unknown error"
+          });
+          
+          recoveryResults.push({
+            projectId: project.id,
+            title: project.title,
+            status: "recovery_failed",
+            error: recoveryError instanceof Error ? recoveryError.message : "Unknown error"
+          });
+        }
+      }
+
+      console.log("🏁 RECOVERY COMPLETE:", {
+        totalChecked: recoverableProjects.length,
+        recovered: recoveredCount,
+        results: recoveryResults
+      });
+
+      res.json({
+        message: `Recovery complete: ${recoveredCount} of ${recoverableProjects.length} projects recovered`,
+        recovered: recoveredCount,
+        total: recoverableProjects.length,
+        results: recoveryResults
+      });
+
+    } catch (error) {
+      console.error("❌ RECOVERY ENDPOINT ERROR:", error);
+      res.status(500).json({ 
+        error: "Recovery failed", 
+        message: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
