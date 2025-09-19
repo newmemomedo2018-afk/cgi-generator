@@ -133,7 +133,8 @@ export async function generateVideoWithKling(
   imageUrl: string, 
   prompt: string, 
   durationSeconds: number = 10,
-  includeAudio: boolean = false
+  includeAudio: boolean = false,
+  negativePrompt: string = ""
 ): Promise<KlingVideoResult> {
   console.log("Starting Kling AI video generation...", {
     imageUrl,
@@ -166,7 +167,7 @@ export async function generateVideoWithKling(
     // Create Kling AI image-to-video request (PiAPI v1 format)
     const requestPayload = {
       model: "kling",
-      task_type: "video_generation",
+      task_type: "video_generation", 
       input: {
         prompt: prompt,
         image_url: imageUrl,  // Send direct image URL
@@ -174,7 +175,7 @@ export async function generateVideoWithKling(
         aspect_ratio: "16:9",
         mode: "std", // std or pro
         cfg_scale: 0.5, // 0.1 to 1.0
-        negative_prompt: ""
+        negative_prompt: negativePrompt || "deformed, distorted, unnatural proportions, melting, morphing, blurry, low quality"
       }
     };
 
@@ -255,8 +256,31 @@ export async function generateVideoWithKling(
           status: statusResponse.status,
           statusText: statusResponse.statusText,
           error: errorText,
-          taskId: taskId
+          taskId: taskId,
+          attempt: attempts,
+          maxAttempts: maxAttempts
         });
+        
+        // Parse the error response to see if it contains useful information
+        let parsedError = null;
+        try {
+          parsedError = JSON.parse(errorText);
+          console.log("Parsed Kling error response:", parsedError);
+        } catch (e) {
+          console.log("Could not parse error response as JSON:", errorText);
+        }
+        
+        // If we get HTTP 400 "failed to find task", it might be a temporary issue
+        // Try a few more times before giving up, but with longer intervals
+        if (statusResponse.status === 400 && errorText.includes("failed to find task")) {
+          console.warn(`Task not found (attempt ${attempts}/${maxAttempts}) - this might be temporary, retrying with longer interval...`);
+          
+          // Wait longer before retrying for 400 errors
+          if (attempts <= maxAttempts - 5) {
+            await new Promise(resolve => setTimeout(resolve, 15000)); // Wait 15 seconds extra
+            continue;
+          }
+        }
         
         // If we get persistent errors and have tried enough times, give up
         if (attempts > 10 && (statusResponse.status === 400 || statusResponse.status === 404)) {

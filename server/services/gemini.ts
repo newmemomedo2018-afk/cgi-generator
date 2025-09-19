@@ -258,11 +258,20 @@ IMPORTANT INTERPRETATION RULES:
 10. NEVER interpret ANY requests as "visual storytelling" or "mood" - make them CONCRETE and VISIBLE
 11. ALWAYS output your response in ENGLISH, even if the input is Arabic
 
+🚨 CRITICAL CGI QUALITY REQUIREMENTS:
+- ALL LIVING CREATURES must have PERFECT NATURAL PROPORTIONS
+- ANIMALS: Realistic head-to-body ratio, correct limb proportions, natural fur/skin texture
+- PEOPLE: Normal human anatomy, realistic facial features, proper body proportions  
+- NO DISTORTION or morphing - everything must look like real photography
+- SHARP FOCUS with HIGH DETAIL for all added elements
+- Professional CGI quality (Hollywood film standard)
+
 BE SPECIFIC about:
 - What SPECIFIC object to REMOVE from the scene (be precise - only that object)
 - What EXACT product to INSERT  
 - HOW it should look and be positioned
-- If user wants PEOPLE added, specify their positioning and emotions (amazed, impressed, interacting with product) - MANDATORY: Include actual human figures, not abstract concepts
+- If user wants PEOPLE added, specify their positioning and emotions (amazed, impressed, interacting with product) - MANDATORY: Include actual human figures with realistic anatomy
+- If user wants ANIMALS added, specify natural realistic appearance (proper proportions, realistic fur/features)
 - Lighting and shadow matching requirements
 - WHAT TO PRESERVE (ceiling, walls, floor, other furniture)
 
@@ -475,6 +484,9 @@ export async function enhanceVideoPromptWithGemini(
   enhancedPrompt: string;
   cameraMovement?: string;
   shotList?: string;
+  imageScenePrompt?: string; // NEW: For static scene generation
+  videoMotionPrompt?: string; // NEW: For motion/animation only
+  qualityNegativePrompt?: string; // NEW: Anti-distortion negative prompt
 }> {
   try {
     console.log("Gemini Video Prompt Enhancement:", {
@@ -499,32 +511,40 @@ export async function enhanceVideoPromptWithGemini(
     const isShortVideo = durationSeconds <= 5;
 
     const prompt = `
-Create professional ${durationSeconds}-second CGI video instructions.
+🎯 TWO-PHASE CGI VIDEO SYSTEM: Separate Static Scene from Motion
 
 ANALYZE the images:
 1. PRODUCT: Identify key features and design
 2. SCENE: Environment, lighting, layout
 
-GENERATE video brief with:
-
-🎬 CAMERA MOVEMENT:
-${isShortVideo ? 'Smooth pan/zoom movement' : 'Dynamic camera sequence'}
-- Timing: specify 0-${durationSeconds}s progression
-- Professional gimbal-smooth motion
-
-🎨 CINEMATOGRAPHY:
-- Match scene lighting cinematically  
-- Highlight product materials
-- Professional color grading
-
-📋 TECHNIQUE:
-- Seamless product integration
-- High-end commercial aesthetics
-- 4K quality, smooth motion
-
 USER REQUEST: "${userDescription}"
 
-CRITICAL USER REQUEST PROCESSING: The user request might be ANYTHING - animals, objects, people, colors, positions, lighting, emotions, etc. You MUST interpret ALL requests LITERALLY and apply them to the final video. Do NOT ignore or dismiss any user request as "mood" or "storytelling".
+🔍 CRITICAL TASK: SEPARATE the user request into TWO PHASES:
+
+PHASE 1 - IMAGE SCENE SETUP (Static Elements):
+- What objects/people should EXIST in the initial scene?
+- Where should they be POSITIONED?
+- What should the environment/lighting LOOK LIKE?
+
+PHASE 2 - VIDEO MOTION (What Changes/Moves):
+- What should MOVE during the ${durationSeconds} seconds?
+- What ACTIONS should happen?
+- What EXPRESSIONS or REACTIONS should change?
+
+EXAMPLE SEPARATION:
+- User: "قطة تجري ثم تقف علي الكنبة وتبص للنجفة بأنبهار"
+- PHASE 1 (Static): Cat positioned in scene, sofa visible, chandelier prominent in frame
+- PHASE 2 (Motion): Cat runs from starting point → stops on sofa → looks up at chandelier with amazement expression
+
+🚨 MANDATORY QUALITY RULES - PHOTOREALISTIC CGI:
+- ALL LIVING CREATURES (people, animals) must have PERFECT NATURAL PROPORTIONS
+- NO DISTORTION: Faces, bodies, limbs must be anatomically correct
+- ANIMALS must look EXACTLY like real animals (proper head size, body shape, fur texture)
+- PEOPLE must have natural human proportions (normal head-to-body ratio, realistic facial features)
+- NO MELTING, MORPHING, or UNNATURAL BLENDING of elements
+- Each element should appear as if photographed in real life, not artificial or cartoon-like
+- SHARP FOCUS and HIGH DETAIL for all elements
+- Professional CGI quality comparable to Hollywood film standards
 
 UNIVERSAL REQUEST INTERPRETATION RULES FOR VIDEO:
 1. ANY request from the user MUST be implemented literally in the final video
@@ -574,9 +594,23 @@ IMPORTANT VIDEO INTERPRETATION RULES:
 9. NEVER interpret people requests as "visual storytelling" or "mood" - they mean literal human figures
 10. ALWAYS output your response in ENGLISH, even if the input is Arabic
 
-CRITICAL: When user requests people in Arabic ("ناس" / "أشخاص"), you MUST include actual human figures in your video brief. Do NOT interpret this as "mood", "atmosphere", "visual storytelling", or "implied presence". Include visible people with clear facial expressions and body language.
+🎯 MANDATORY OUTPUT FORMAT - STRICT JSON ONLY:
+You must respond with VALID JSON in this exact format:
 
-Write concise AI video commands using action verbs: "Begin with", "Move camera", "Focus on", "End with".
+{
+  "imageScenePrompt": "Description of STATIC elements for initial scene - objects, people positions, lighting, environment",
+  "videoMotionPrompt": "Description of MOTION/ANIMATION only - what moves, changes, reacts during the ${durationSeconds} seconds",
+  "combinedVideoPrompt": "Professional video brief with action verbs: Begin with, Move camera, Show, Focus on, End with",
+  "qualityNegativePrompt": "Comma-separated list of things to avoid: deformed, distorted, unnatural proportions, melting, morphing",
+  "motionInstructions": "Specific motion timing and camera work details"
+}
+
+🚨 CRITICAL QUALITY REQUIREMENTS (Include in qualityNegativePrompt):
+- For PEOPLE: "deformed faces, distorted body proportions, extra limbs, malformed anatomy, unnatural head size"
+- For ANIMALS: "distorted animal anatomy, unnatural proportions, melting fur, deformed limbs, wrong body shape"  
+- GENERAL: "blurry, low quality, amateur CGI, morphing, melting, unnatural blending"
+
+RESPOND ONLY WITH VALID JSON - NO OTHER TEXT BEFORE OR AFTER THE JSON
 `;
 
     const contentParts = [];
@@ -604,18 +638,70 @@ Write concise AI video commands using action verbs: "Begin with", "Move camera",
 
     const result = await model.generateContent(contentParts);
     const response = await result.response;
-    const enhancedPrompt = response.text();
+    const fullResponse = response.text();
+    
+    // Parse JSON response from Gemini
+    let parsedResponse: {
+      imageScenePrompt?: string;
+      videoMotionPrompt?: string; 
+      combinedVideoPrompt?: string;
+      qualityNegativePrompt?: string;
+      motionInstructions?: string;
+    } = {};
+    
+    try {
+      // Try to extract JSON from response (handle cases where Gemini adds extra text)
+      const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        parsedResponse = JSON.parse(jsonMatch[0]);
+        console.log("Successfully parsed Gemini JSON response:", {
+          hasImageScene: !!parsedResponse.imageScenePrompt,
+          hasVideoMotion: !!parsedResponse.videoMotionPrompt,
+          hasCombined: !!parsedResponse.combinedVideoPrompt,
+          hasNegativePrompt: !!parsedResponse.qualityNegativePrompt
+        });
+      } else {
+        throw new Error("No JSON found in response");
+      }
+    } catch (parseError) {
+      console.warn("Failed to parse Gemini JSON response, falling back to text parsing:", parseError);
+      
+      // Fallback to text-based parsing if JSON parsing fails
+      const imageSceneMatch = fullResponse.match(/imageScenePrompt['"]\s*:\s*['"]([^'"]*)['"]/);
+      const videoMotionMatch = fullResponse.match(/videoMotionPrompt['"]\s*:\s*['"]([^'"]*)['"]/);
+      const combinedPromptMatch = fullResponse.match(/combinedVideoPrompt['"]\s*:\s*['"]([^'"]*)['"]/);
+      
+      parsedResponse = {
+        imageScenePrompt: imageSceneMatch ? imageSceneMatch[1] : '',
+        videoMotionPrompt: videoMotionMatch ? videoMotionMatch[1] : '',
+        combinedVideoPrompt: combinedPromptMatch ? combinedPromptMatch[1] : fullResponse,
+        qualityNegativePrompt: 'deformed, distorted, unnatural proportions, melting, morphing', // Default
+        motionInstructions: ''
+      };
+    }
+    
+    // Extract the separated prompts with fallbacks
+    const imageScenePrompt = parsedResponse.imageScenePrompt || '';
+    const videoMotionPrompt = parsedResponse.videoMotionPrompt || ''; 
+    const combinedVideoPrompt = parsedResponse.combinedVideoPrompt || fullResponse;
+    const qualityNegativePrompt = parsedResponse.qualityNegativePrompt || 'deformed, distorted, unnatural proportions';
+    
+    // Use combined prompt as main enhanced prompt, fallback to full response
+    const enhancedPrompt = combinedVideoPrompt;
     
     // Extract camera movement suggestions (basic parsing)
-    const cameraMovementMatch = enhancedPrompt.match(/camera[^.]*?(pan|zoom|dolly|orbit|push|pull|tilt|track)[^.]*\./i);
+    const cameraMovementMatch = fullResponse.match(/camera[^.]*?(pan|zoom|dolly|orbit|push|pull|tilt|track)[^.]*\./i);
     const cameraMovement = cameraMovementMatch ? cameraMovementMatch[0] : undefined;
     
     // Extract shot progression (basic parsing)  
-    const shotListMatch = enhancedPrompt.match(/(\d+-\d+s:|wide|medium|close|establishing|detail)[^.]*\./gi);
+    const shotListMatch = fullResponse.match(/(\d+-\d+s:|wide|medium|close|establishing|detail)[^.]*\./gi);
     const shotList = shotListMatch ? shotListMatch.join(' → ') : undefined;
     
-    console.log("Enhanced video prompt generated:", {
-      promptLength: enhancedPrompt.length,
+    console.log("Enhanced video prompt generated with separation:", {
+      fullResponseLength: fullResponse.length,
+      imageSceneLength: imageScenePrompt.length,
+      videoMotionLength: videoMotionPrompt.length,
+      combinedPromptLength: combinedVideoPrompt.length,
       duration: durationSeconds,
       cameraMovement: cameraMovement?.substring(0, 100),
       shotList: shotList?.substring(0, 100)
@@ -624,7 +710,10 @@ Write concise AI video commands using action verbs: "Begin with", "Move camera",
     return {
       enhancedPrompt,
       cameraMovement,
-      shotList
+      shotList,
+      imageScenePrompt, // NEW: Static scene description
+      videoMotionPrompt, // NEW: Motion-only description
+      qualityNegativePrompt // NEW: Anti-distortion negative prompt
     };
     
   } catch (error) {

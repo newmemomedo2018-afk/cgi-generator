@@ -74,4 +74,42 @@ The authentication system includes password hashing with bcrypt and supports bot
 - **Tailwind CSS**: Utility-first CSS framework
 - **shadcn/ui**: Pre-built component library built on Radix UI
 
-The system architecture supports a multi-stage AI processing pipeline where user inputs are enhanced through Gemini AI before being processed by Fal.ai for final content generation, with progress tracking and real-time updates throughout the process.
+The system architecture supports a multi-stage AI processing pipeline where user inputs are enhanced through Gemini AI before being processed by Kling AI for final content generation, with progress tracking and real-time updates throughout the process.
+
+# Recent Changes
+
+## CGI Video Generation Enhancements (September 2025)
+
+### Structured Prompt Separation
+The system now intelligently separates static scene setup from motion/animation commands:
+
+- **Image Generation**: Uses `imageScenePrompt` for static scene composition (lighting, environment, object placement)
+- **Video Generation**: Uses `videoMotionPrompt` for motion and animation instructions 
+- **Enhanced Workflow**: Gemini AI outputs structured JSON with separated prompts for optimal results
+- **Fallback Support**: Graceful degradation to combined prompts when separation unavailable
+
+### Quality Enhancement System
+Implemented comprehensive quality controls to prevent distortion and ensure natural results:
+
+- **Negative Prompts**: Active prevention of deformed, distorted, or unnatural proportions
+- **Anatomical Accuracy**: Special rules for human and animal features to maintain natural appearance
+- **Photorealistic Standards**: Enforced CGI quality requirements throughout generation pipeline
+- **Error Prevention**: Validation ensures quality prompts are never empty or skipped
+
+### Kling AI Integration Improvements
+Enhanced reliability and error handling for the Kling AI video generation service:
+
+- **Improved Polling**: Better handling of transient "failed to find task" errors with extended retry logic
+- **Direct URL Processing**: Streamlined image-to-video workflow using direct image URLs
+- **Enhanced Error Context**: Detailed logging and error reporting for debugging and monitoring
+- **Status Validation**: Comprehensive task status checking with appropriate timeout handling
+
+### Advanced Logging and Observability
+Comprehensive tracking system for debugging and optimization:
+
+- **Prompt Type Tracking**: Logs show whether static scene or motion prompts are being used
+- **Quality Validation**: Negative prompt validation with length and content preview
+- **Workflow Monitoring**: Complete visibility into each processing stage with performance metrics
+- **Integration Health**: Real-time monitoring of AI service responses and error patterns
+
+These enhancements significantly improve the quality and reliability of CGI video generation, with particular focus on natural motion, anatomical accuracy, and robust error handling for Arabic language support and complex scene descriptions.

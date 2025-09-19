@@ -649,6 +649,12 @@ async function processProject(projectId: string) {
 
     // Integrate with Gemini AI for prompt enhancement (use video-specific enhancement for video projects)
     let enhancedPrompt;
+    let videoPromptData: {
+      imageScenePrompt?: string;
+      videoMotionPrompt?: string;
+      qualityNegativePrompt?: string;
+    } = {};
+    
     try {
       if (project.contentType === "video") {
         const { enhanceVideoPromptWithGemini } = await import('./services/gemini');
@@ -662,6 +668,19 @@ async function processProject(projectId: string) {
           }
         );
         enhancedPrompt = result.enhancedPrompt;
+        videoPromptData = {
+          imageScenePrompt: result.imageScenePrompt,
+          videoMotionPrompt: result.videoMotionPrompt,
+          qualityNegativePrompt: result.qualityNegativePrompt
+        };
+        
+        console.log("Video prompt separation:", {
+          hasImageScene: !!videoPromptData.imageScenePrompt,
+          hasVideoMotion: !!videoPromptData.videoMotionPrompt,
+          hasNegativePrompt: !!videoPromptData.qualityNegativePrompt,
+          imageSceneLength: videoPromptData.imageScenePrompt?.length || 0,
+          videoMotionLength: videoPromptData.videoMotionPrompt?.length || 0
+        });
       } else {
         enhancedPrompt = await enhancePromptWithGemini(
           productImagePath,
@@ -685,13 +704,20 @@ async function processProject(projectId: string) {
       progress: 60 
     });
 
-    // Integrate with Gemini for multi-image generation - now returns structured data
+    // Integrate with Gemini for multi-image generation - use imageScenePrompt if available
     let geminiImageResult;
+    const imagePrompt = videoPromptData.imageScenePrompt || enhancedPrompt;
+    console.log("Using prompt for image generation:", {
+      usingImageScene: !!videoPromptData.imageScenePrompt,
+      promptLength: imagePrompt.length,
+      promptType: videoPromptData.imageScenePrompt ? "static-scene-focused" : "combined"
+    });
+    
     try {
       geminiImageResult = await generateImageWithGemini(
         productImagePath,
         sceneImagePath,
-        enhancedPrompt
+        imagePrompt // Use separated static scene prompt when available
       );
     } finally {
       // Record cost even if call fails
@@ -772,8 +798,16 @@ async function processProject(projectId: string) {
     });
 
     // Step 2.5: Enhance video prompt from generated image (NEW STEP!)
-    let finalVideoPrompt = enhancedPrompt; // Default to image prompt
+    // Use motion-specific prompt if available, otherwise fallback to combined prompt
+    let finalVideoPrompt = videoPromptData.videoMotionPrompt || enhancedPrompt;
     let audioPrompt: string | undefined = undefined;
+    
+    console.log("Base video prompt selection:", {
+      usingMotionPrompt: !!videoPromptData.videoMotionPrompt,
+      motionPromptLength: videoPromptData.videoMotionPrompt?.length || 0,
+      fallbackPromptLength: enhancedPrompt.length,
+      promptType: videoPromptData.videoMotionPrompt ? "motion-focused" : "combined"
+    });
     
     if (project.contentType === "video") {
       console.log("🎬 Step 2.5: Analyzing generated image for optimal video production...");
@@ -795,7 +829,18 @@ async function processProject(projectId: string) {
           }
         );
 
-        finalVideoPrompt = videoEnhancement.enhancedVideoPrompt;
+        // Merge video enhancement with existing motion prompt (don't overwrite!)
+        const basePrompt = finalVideoPrompt; // This is videoMotionPrompt || enhancedPrompt
+        finalVideoPrompt = `${basePrompt}
+
+Camera and Production: ${videoEnhancement.enhancedVideoPrompt}`;
+        
+        console.log("🎬 Video prompt merged with enhancement:", {
+          basePromptLength: basePrompt.length,
+          enhancementLength: videoEnhancement.enhancedVideoPrompt.length,
+          finalPromptLength: finalVideoPrompt.length,
+          baseType: videoPromptData.videoMotionPrompt ? "motion-focused" : "combined"
+        });
         audioPrompt = videoEnhancement.audioPrompt;
 
         // Add cost for video prompt enhancement
@@ -851,12 +896,27 @@ async function processProject(projectId: string) {
             hasAudioPrompt: false
           });
           
-          // Use the video-enhanced prompt and selected video duration
+          // Use the video-enhanced prompt and selected video duration with quality negative prompt
+          const effectiveNegativePrompt = videoPromptData.qualityNegativePrompt || 
+            "deformed, distorted, unnatural proportions, melting, morphing, blurry, low quality";
+          
+          console.log("🎬 Kling API negative prompt validation:", {
+            hasCustomNegative: !!videoPromptData.qualityNegativePrompt,
+            negativePromptLength: effectiveNegativePrompt.length,
+            negativePromptPreview: effectiveNegativePrompt.substring(0, 50) + "..."
+          });
+          
+          // Assert non-empty negative prompt
+          if (!effectiveNegativePrompt || effectiveNegativePrompt.trim().length === 0) {
+            throw new Error("Negative prompt must not be empty for video generation");
+          }
+          
           videoResult = await generateVideoWithKling(
             imageResult.url, 
             finalVideoPrompt, // Use enhanced video prompt instead of original
             project.videoDurationSeconds || 10,
-            false // Audio disabled
+            false, // Audio disabled
+            effectiveNegativePrompt
           );
           
           console.log("🎬 generateVideoWithKling returned:", {
