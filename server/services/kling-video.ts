@@ -14,7 +14,10 @@ interface KlingVideoResult {
 async function addAudioToVideo(
   videoTaskId: string, 
   prompt: string, 
-  klingApiKey: string
+  klingApiKey: string,
+  // For recovery system - save audio task ID immediately
+  projectId?: string,
+  storage?: any
 ): Promise<string> {
   console.log("Adding audio to video via PiAPI Kling Sound...", {
     videoTaskId,
@@ -72,6 +75,33 @@ async function addAudioToVideo(
       dataKeys: result.data ? Object.keys(result.data) : null
     });
     throw new Error(`Kling Sound API error: No task_id returned. Response: ${JSON.stringify(result)}`);
+  }
+
+  // 🚨 RECOVERY SYSTEM: Save audio task ID immediately for failed project recovery
+  if (projectId && storage) {
+    try {
+      await storage.updateProject(projectId, { 
+        klingSoundTaskId: taskId
+      });
+      console.log("✅ RECOVERY: Saved Kling audio task ID for recovery:", {
+        projectId,
+        soundTaskId: taskId,
+        saved: "immediately"
+      });
+    } catch (saveError) {
+      console.error("⚠️ WARNING: Failed to save audio task ID for recovery (continuing anyway):", {
+        projectId,
+        soundTaskId: taskId,
+        error: saveError instanceof Error ? saveError.message : "Unknown error"
+      });
+      // Don't throw - continue with audio generation even if save fails
+    }
+  } else {
+    console.log("ℹ️ RECOVERY: No project/storage provided - audio task ID not saved for recovery:", {
+      hasProjectId: !!projectId,
+      hasStorage: !!storage,
+      soundTaskId: taskId
+    });
   }
 
   // Poll for completion
@@ -391,7 +421,7 @@ export async function generateVideoWithKling(
             includeAudio: includeAudio
           });
           try {
-            finalVideoUrl = await addAudioToVideo(taskId, prompt, klingApiKey);
+            finalVideoUrl = await addAudioToVideo(taskId, prompt, klingApiKey, projectId, storage);
             console.log("🎵 AUDIO ADDED SUCCESSFULLY:", {
               originalVideoUrl: videoUrl,
               originalVideoTaskId: taskId,
