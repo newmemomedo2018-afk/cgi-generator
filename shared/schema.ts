@@ -62,6 +62,10 @@ export const projects = pgTable("projects", {
   resolution: varchar("resolution").default("1024x1024"),
   quality: varchar("quality").default("standard"),
   errorMessage: text("error_message"),
+  // Kling AI task tracking for recovery
+  klingVideoTaskId: varchar("kling_video_task_id"), // For video generation task
+  klingSoundTaskId: varchar("kling_sound_task_id"), // For audio enhancement task
+  includeAudio: boolean("include_audio").default(false), // Whether to add audio to video
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

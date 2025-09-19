@@ -916,7 +916,10 @@ Camera and Production: ${videoEnhancement.enhancedVideoPrompt}`;
             finalVideoPrompt, // Use enhanced video prompt instead of original
             project.videoDurationSeconds || 10,
             false, // Audio disabled
-            effectiveNegativePrompt
+            effectiveNegativePrompt,
+            // For recovery system
+            projectId,
+            storage
           );
           
           console.log("🎬 generateVideoWithKling returned:", {

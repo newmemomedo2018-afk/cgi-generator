@@ -51,13 +51,30 @@ async function addAudioToVideo(
   }
 
   const result = await response.json();
+  
+  // Handle different response formats from Kling AI (same as video generation)
+  const taskData = result.data || result; // New format has data wrapper
+  const taskId = taskData.task_id;
+  
   console.log("Kling Sound request submitted:", {
-    taskId: result.task_id,
-    status: result.status
+    taskId: taskId,
+    status: taskData.status,
+    fullResponse: result,
+    responseFormat: result.data ? 'wrapped' : 'direct'
   });
 
+  if (!taskId) {
+    console.error("❌ CRITICAL: Kling Sound API didn't return a task_id!", {
+      response: result,
+      data: result.data,
+      hasTaskId: !!taskId,
+      responseKeys: Object.keys(result),
+      dataKeys: result.data ? Object.keys(result.data) : null
+    });
+    throw new Error(`Kling Sound API error: No task_id returned. Response: ${JSON.stringify(result)}`);
+  }
+
   // Poll for completion
-  const taskId = result.task_id;
   let attempts = 0;
   const maxAttempts = 30; // 5 minutes max for audio processing
 
@@ -134,7 +151,10 @@ export async function generateVideoWithKling(
   prompt: string, 
   durationSeconds: number = 10,
   includeAudio: boolean = false,
-  negativePrompt: string = ""
+  negativePrompt: string = "",
+  // For recovery system - save task ID immediately
+  projectId?: string,
+  storage?: any
 ): Promise<KlingVideoResult> {
   console.log("Starting Kling AI video generation...", {
     imageUrl,
@@ -247,6 +267,35 @@ export async function generateVideoWithKling(
         dataKeys: result.data ? Object.keys(result.data) : null
       });
       throw new Error(`Kling AI API error: No task_id returned. Response: ${JSON.stringify(result)}`);
+    }
+
+    // 🚨 RECOVERY SYSTEM: Save task ID immediately for failed project recovery
+    if (projectId && storage) {
+      try {
+        await storage.updateProject(projectId, { 
+          klingVideoTaskId: taskId,
+          includeAudio: includeAudio 
+        });
+        console.log("✅ RECOVERY: Saved Kling video task ID for recovery:", {
+          projectId,
+          taskId,
+          includeAudio,
+          saved: "immediately"
+        });
+      } catch (saveError) {
+        console.error("⚠️ WARNING: Failed to save task ID for recovery (continuing anyway):", {
+          projectId,
+          taskId,
+          error: saveError instanceof Error ? saveError.message : "Unknown error"
+        });
+        // Don't throw - continue with video generation even if save fails
+      }
+    } else {
+      console.log("ℹ️ RECOVERY: No project/storage provided - task ID not saved for recovery:", {
+        hasProjectId: !!projectId,
+        hasStorage: !!storage,
+        taskId
+      });
     }
 
     // Poll for completion
