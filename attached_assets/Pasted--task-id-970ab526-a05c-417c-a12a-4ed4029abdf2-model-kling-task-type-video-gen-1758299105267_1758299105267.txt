@@ -1,0 +1,67 @@
+{
+  "task_id": "970ab526-a05c-417c-a12a-4ed4029abdf2",
+  "model": "kling",
+  "task_type": "video_generation",
+  "status": "completed",
+  "config": {
+    "service_mode": "",
+    "webhook_config": {
+      "endpoint": "",
+      "secret": ""
+    }
+  },
+  "input": {
+    "aspect_ratio": "16:9",
+    "cfg_scale": 0.5,
+    "duration": 10,
+    "image_url": "https://res.cloudinary.com/dqtsski2w/image/upload/v1758298433/cgi-generated/cgi-generated/generated-1758298433296-299206393.png",
+    "mode": "std",
+    "negative_prompt": "deformed faces, distorted body proportions, extra limbs, malformed anatomy, unnatural head size, distorted animal anatomy, unnatural proportions, melting fur, deformed limbs, wrong body shape, blurry, low quality, amateur CGI, morphing, melting, unnatural blending, artifacts, noise, unrealistic textures",
+    "prompt": "The 10-second CGI video begins with a wide shot encompassing both the dining room and living room. The camera slowly pans from the dining room's three-ring chandelier to showcase its soft glow, then smoothly transitions to the living room's intricate chandelier. The camera then smoothly orbits the organic coffee table in the living room for approximately 5 seconds, allowing the viewer to appreciate its form from all angles.  The final 5 seconds focus on a slow zoom into the three-ring chandelier in the dining room, highlighting the intricate details of its LED lighting. The entire video maintains a smooth, slow, cinematic pace.\n\nCamera and Production: Create a 10-second cinematic video showcasing a luxurious modern living room.  The scene features a large, organically shaped, dark bronze coffee table as the centerpiece, sitting on a plush, patterned rug. Above it hangs a striking three-ring LED chandelier with a gold-toned frame whose lights pulse softly and change intensity rhythmically. An abstract bronze sculpture subtly rotates. A burnt orange plush armchair adds a touch of warmth. The dark wood paneling features inlaid geometric designs.  The camera performs a slow, smooth pan from right to left, focusing on the coffee table, then the chandelier, highlighting the textures, shapes, and sophisticated design.  The lighting should be soft and warm, enhancing the luxurious feel.  The overall style should be photorealistic and high-end, emphasizing the elegant and contemporary design. The video should subtly emphasize the scale and beauty of the central coffee table."
+  },
+  "output": {
+    "video_url": "https://storage.theapi.app/videos/290269945505643.mp4",
+    "type": "m2v_img2video",
+    "status": 99,
+    "works": [
+      {
+        "content_type": "video",
+        "status": 99,
+        "type": "m2v_img2video",
+        "cover": {
+          "resource": "https://s15-kling.klingai.com/kimg/EMXN1y8qgwEKBnVwbG9hZBIOeWxhYi1zdHVudC1zZ3AaaXNlL2FpX3BvcnRhbF9zZ3BfbTJ2X2ltZzJ2aWRlb18xMDgwcF9zdGRfdjE2X2Rpc3RpbGwvMTM1ODIwY2EtZDVjNC00NzI5LThhOTQtMjhmZDc0MjkyOGY0X3ZpZGVvX2NvdmVyLmpwZw.origin?x-kcdn-pid=112372",
+          "resource_without_watermark": "",
+          "height": 992,
+          "width": 896,
+          "duration": 0
+        },
+        "video": {
+          "resource": "https://v15-kling.klingai.com/bs2/upload-ylab-stunt-sgp/se/ai_portal_sgp_m2v_img2video_1080p_std_v16_distill/eead1183-e7aa-4472-a402-7a764ceff712_video.mp4?x-kcdn-pid=112372",
+          "resource_without_watermark": "https://storage.theapi.app/videos/290269945505643.mp4",
+          "height": 992,
+          "width": 896,
+          "duration": 10433
+        }
+      }
+    ]
+  },
+  "meta": {
+    "created_at": "2025-09-19T16:14:07.5458309Z",
+    "started_at": "2025-09-19T16:14:07.887063092Z",
+    "ended_at": "2025-09-19T16:16:54.216802963Z",
+    "usage": {
+      "type": "point",
+      "frozen": 5200000,
+      "consume": 5200000
+    },
+    "is_using_private_pool": false
+  },
+  "detail": null,
+  "logs": null,
+  "error": {
+    "code": 0,
+    "raw_message": "",
+    "message": "",
+    "detail": null
+  }
+}

@@ -492,22 +492,51 @@ export async function generateVideoWithKling(
         continue;
       }
 
-      const statusResult = await statusResponse.json();
-      console.log("Kling AI status update:", {
-        status: statusResult.status,
-        progress: statusResult.progress || 'N/A'
+      // 🔍 CRITICAL DEBUG: Raw status response analysis
+      const rawStatusBody = await statusResponse.clone().text();
+      console.log(`🔍 [ATTEMPT ${attempts}] Raw status response:`, {
+        contentType: statusResponse.headers.get('content-type'),
+        statusCode: statusResponse.status,
+        bodyLength: rawStatusBody.length,
+        bodyPreview: rawStatusBody.substring(0, 300) + (rawStatusBody.length > 300 ? '...' : '')
       });
 
-      if (statusResult.status === 'completed' || statusResult.status === 'success') {
+      const statusResult = await statusResponse.json();
+      
+      // 🔍 CRITICAL DEBUG: Parsed status result analysis  
+      console.log(`🔍 [ATTEMPT ${attempts}] Parsed status result:`, {
+        resultType: typeof statusResult,
+        resultKeys: statusResult && typeof statusResult === 'object' ? Object.keys(statusResult) : null,
+        fullResult: JSON.stringify(statusResult, null, 2)
+      });
+      
+      // Use resilient status extraction similar to task_id
+      const taskStatus = statusResult?.status || statusResult?.data?.status;
+      const taskProgress = statusResult?.progress || statusResult?.data?.progress;
+      
+      console.log("Kling AI status update:", {
+        status: taskStatus,
+        progress: taskProgress || 'N/A',
+        extractedFrom: statusResult?.status ? 'direct' : statusResult?.data?.status ? 'data.status' : 'none'
+      });
+
+      if (taskStatus === 'completed' || taskStatus === 'success') {
         console.log("Kling AI video generation completed!");
         
         // PiAPI v1 format: get video URL from multiple possible locations
-        const videoUrl = statusResult.output?.video_url || 
-                        statusResult.output?.works?.[0]?.video?.resource_without_watermark ||
-                        statusResult.output?.works?.[0]?.video?.resource;
+        // Check both direct and data-wrapped responses
+        const outputData = statusResult.output || statusResult.data?.output;
+        const videoUrl = outputData?.video_url || 
+                        outputData?.works?.[0]?.video?.resource_without_watermark ||
+                        outputData?.works?.[0]?.video?.resource;
         
         if (!videoUrl) {
-          console.error("No video URL found in completed result:", statusResult);
+          console.error("No video URL found in completed result:", {
+            statusResult,
+            outputData,
+            hasOutput: !!outputData,
+            outputKeys: outputData ? Object.keys(outputData) : null
+          });
           throw new Error("Video URL not found in Kling AI response");
         }
 
@@ -554,14 +583,21 @@ export async function generateVideoWithKling(
         };
       }
 
-      if (statusResult.status === 'failed' || statusResult.status === 'error') {
+      if (taskStatus === 'failed' || taskStatus === 'error') {
         console.error("Kling AI generation failed:", statusResult);
-        throw new Error(`Kling AI generation failed: ${statusResult.error || 'Unknown error'}`);
+        const errorMessage = statusResult.error || statusResult.data?.error || statusResult.message || statusResult.data?.message || 'Unknown error';
+        throw new Error(`Kling AI generation failed: ${errorMessage}`);
       }
 
       // Continue polling if still processing
-      if (statusResult.status === 'processing' || statusResult.status === 'pending' || statusResult.status === 'running') {
-        console.log(`Kling AI still processing... (${statusResult.progress || 'N/A'})`);
+      if (taskStatus === 'processing' || taskStatus === 'pending' || taskStatus === 'running') {
+        console.log(`Kling AI still processing... (${taskProgress || 'N/A'})`);
+        continue;
+      }
+      
+      // Log unexpected status for debugging
+      if (taskStatus && !['completed', 'success', 'failed', 'error', 'processing', 'pending', 'running'].includes(taskStatus)) {
+        console.warn(`Unknown Kling AI status: ${taskStatus} - continuing to poll...`);
         continue;
       }
     }
