@@ -4,13 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, X, Star, Rocket, Crown, Building, TestTube, CreditCard } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { loadStripe } from "@stripe/stripe-js";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
 
 export default function Pricing() {
   const { isAuthenticated } = useAuth();
-  const { toast } = useToast();
   const [purchasingPackage, setPurchasingPackage] = useState<string | null>(null);
 
   const handlePurchase = async (packageId: string) => {
@@ -19,55 +15,9 @@ export default function Pricing() {
       return;
     }
 
-    const selectedPackage = packages.find(pkg => pkg.id === packageId);
-    if (!selectedPackage) return;
-
-    setPurchasingPackage(packageId);
-
-    try {
-      // Create payment intent
-      const response = await apiRequest('/api/purchase-credits', {
-        method: 'POST',
-        body: JSON.stringify({
-          amount: selectedPackage.price,
-          credits: selectedPackage.credits,
-          packageId: selectedPackage.id
-        })
-      });
-
-      const { clientSecret } = response;
-      
-      // Load Stripe
-      const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY!);
-      if (!stripe) {
-        throw new Error('Failed to load Stripe');
-      }
-
-      // Redirect to Stripe checkout
-      const { error } = await stripe.confirmPayment({
-        clientSecret,
-        confirmParams: {
-          return_url: `${window.location.origin}/dashboard?payment=success`,
-        },
-      });
-
-      if (error) {
-        toast({
-          title: "خطأ في الدفع",
-          description: error.message || "حدث خطأ أثناء معالجة الدفعة",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Payment error:', error);
-      toast({
-        title: "خطأ في الدفع",
-        description: "حدث خطأ أثناء معالجة الدفعة. يرجى المحاولة مرة أخرى.",
-        variant: "destructive"
-      });
-    } finally {
-      setPurchasingPackage(null);
-    }
+    // For now, just show a message until Stripe is fully configured
+    alert("ستكون ميزة الدفع متاحة قريباً! 💳");
+    console.log("Purchase package:", packageId);
   };
 
   const packages = [
