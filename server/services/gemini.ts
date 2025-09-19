@@ -161,134 +161,27 @@ export async function enhancePromptWithGemini(
     ]);
 
     const prompt = `
-You are an expert CGI artist creating precise instructions for AI image generation.
+انت خبير CGI وهاتعمل تعليمات دقيقة لتوليد الصور بالذكاء الاصطناعي.
 
-ANALYZE the two reference images:
-1. PRODUCT IMAGE: Identify the exact product name, brand, label text, shape, size, materials, colors
-2. SCENE IMAGE: Note existing objects to be replaced, lighting conditions, environment, perspective
+قم بتحليل الصورتين دول بدقة:
+1. صورة المنتج: عرف اسم المنتج والبراند والشكل والالوان
+2. صورة المشهد: شوف ايه الموجود اللي هيتم استبداله والاضاءة والبيئة
 
-Your task: Create DIRECT COMMANDS for the AI image generator to:
-1. COMPLETELY REMOVE AND ERASE the existing product(s) mentioned by the user - make them disappear entirely
-2. INSERT the exact product from the first image in the same location
-3. Match lighting, shadows, and perspective perfectly
-4. PRESERVE ALL architectural elements (ceiling, walls, floor) unchanged
+المطلوب منك:
+1. امسح وشيل نهائياً المنتج الموجود - خليه يختفي تماماً
+2. حط المنتج الجديد مكانه بالضبط  
+3. خلي الاضاءة والظلال متطابقة تماماً
+4. احتفظ بكل العمارة (السقف والحيطان والارضية) زي ما هي
 
-🚨 CRITICAL REMOVAL INSTRUCTIONS:
-- When removing existing objects, they must be COMPLETELY ELIMINATED from the scene
-- No traces, shadows, or remnants of the old object should remain
-- The space where the old object was should be naturally filled or empty
-- Focus on COMPLETE REPLACEMENT, not addition
+🚨 قواعد الشيل المهمة:
+- لازم يتشال نهائياً مش بقايا او اثار
+- المكان يتملي طبيعي او يفضى
+- التركيز على الاستبدال الكامل مش الاضافة
 
-CRITICAL PRESERVATION RULES:
-- PRESERVE THE CEILING 100% unchanged (do not modify ceiling color, texture, height, or any ceiling elements)
-- PRESERVE ALL WALLS 100% unchanged (do not modify wall materials, colors, textures, or structural elements)
-- PRESERVE THE FLOOR 100% unchanged (do not modify flooring materials, patterns, or colors)
-- PRESERVE ALL EXISTING FURNITURE 100% unchanged except for the specific item being replaced
+طلب المستخدم: ${userDescription}
 
-Generate a COMMAND-STYLE prompt like this example:
-"COMPLETELY REMOVE AND ERASE the [existing object] from the scene - eliminate it entirely with no traces remaining. Replace it with the [exact product name] from the reference image. The [product] should appear ultra-realistic in CGI style, [size description], positioned [placement details]. Make sure the lighting and shadows match the [lighting description]. Keep ALL other elements including ceiling, walls, floor, and furniture completely unchanged. The [product] should have [texture/material details], and look [style description]. Render in high resolution with cinematic composition and sharp details."
+اكتب تعليمات مباشرة بالانجليزي للذكاء الاصطناعي.
 
-🚨 REMOVAL EMPHASIS: Use strong removal language like "COMPLETELY REMOVE", "ELIMINATE ENTIRELY", "ERASE COMPLETELY", "NO TRACES REMAINING"
-🚨 IMPORTANT: Do NOT add people, humans, or characters unless EXPLICITLY requested by the user in their description. The default scene should only contain the product and environment.
-
-User Request: ${userDescription}
-
-CRITICAL USER REQUEST PROCESSING: The user request might be ANYTHING - animals, objects, people, colors, positions, lighting, emotions, etc. You MUST interpret ALL requests LITERALLY and apply them to the final image. Do NOT ignore or dismiss any user request as "mood" or "storytelling".
-
-UNIVERSAL REQUEST INTERPRETATION RULES:
-1. ANY request from the user MUST be implemented literally in the final image
-2. If user asks to ADD something → ADD it visibly and clearly  
-3. If user asks to CHANGE something → CHANGE it exactly as requested
-4. If user asks to REMOVE something → COMPLETELY ELIMINATE it with no traces remaining
-5. If user specifies QUANTITIES → Use exact numbers (not approximate)
-6. If user specifies POSITIONS → Place elements exactly where requested
-7. If user mentions COLORS → Apply those exact colors
-8. If user describes EMOTIONS/EXPRESSIONS → Show them clearly on faces
-9. NEVER interpret requests as "abstract concepts" - make them VISIBLE and CONCRETE
-10. 🚨 CRITICAL: NEVER add people, humans, or characters unless EXPLICITLY mentioned in user request
-11. 🚨 DEFAULT SCENE: Product + Environment ONLY (no people unless requested)
-
-CRITICAL ARABIC LANGUAGE SUPPORT: The user request might be in Arabic. You MUST understand and interpret Arabic properly:
-
-ARABIC PHRASES AND MEANINGS (APPLY ALL LITERALLY):
-- "أضف ناس منبهرين بالمنتج" / "ضيف ناس منبهرين بالمنتج" = "Add people amazed by the product" → MANDATORY: Include actual human figures (2-4 people) in the scene with visible expressions of amazement, wonder, or admiration while looking at or interacting with the product. Do NOT interpret this metaphorically.
-- "أضف أشخاص منبهرين بالمنتج" = "Add people amazed by the product" → MANDATORY: Same as above, include actual human people showing amazement, NOT just visual storytelling
-- "لا تضيف أشخاص" / "بدون ناس" / "ما في ناس" = "Don't add people" / "Without people" → Do NOT include any human figures
-
-ANIMALS AND OBJECTS REQUESTS:
-- "أضف فيل" / "ضيف فيل" = "Add elephant" → Include an actual elephant in the scene
-- "أضف قطة" / "ضيف قطة" = "Add cat" → Include an actual cat in the scene  
-- "أضف كلب" / "ضيف كلب" = "Add dog" → Include an actual dog in the scene
-- "أضف طيور" / "ضيف عصافير" = "Add birds" → Include actual birds in the scene
-- "أضف زهور" / "ضيف ورود" = "Add flowers" → Include actual flowers in the scene
-- "أضف شجر" / "ضيف أشجار" = "Add trees" → Include actual trees in the scene
-- "أضف سحاب" / "ضيف غيوم" = "Add clouds" → Include actual clouds in the sky
-- "أضف نار" / "ضيف شعلة" = "Add fire" → Include actual fire/flames in the scene
-
-MODIFICATIONS AND CHANGES:
-- "غير المكان" / "بدل المكان" = "Change the location/place" → Modify the scene environment
-- "غير اللون" / "بدل اللون" = "Change the color" → Modify the color as specified
-- "خليه أكبر" / "كبره" / "كبّر" / "زود الحجم" = "Make it bigger" → Increase the product size
-- "خليه أصغر" / "صغره" = "Make it smaller" → Decrease the product size
-- "حسن الإضاءة" / "حسن النور" / "أضئه أحسن" = "Improve the lighting" → Enhance lighting quality
-- "زود التفاصيل" / "زِوِّد" / "زوّد" = "Add more details" → Include more detailed elements
-- "خليه أوضح" / "وضحه أكثر" = "Make it clearer" → Improve clarity and sharpness
-- "أضف ألوان أكثر" / "زود الألوان" = "Add more colors" → Include more vibrant colors
-- "خليه يبان أحسن" / "حسّنه" = "Make it look better" → Improve overall appearance
-- "أضف ناس يستعملوا المنتج" / "يستخدموا" / "استعمال" / "استخدام" = "Add people using the product" → Show people actively using/interacting with the product
-- "خليه في وسط الصورة" / "في المنتصف" / "في الوسط" = "Put it in the center of the image" → Position the product centrally
-
-POSITIONING AND DIRECTION WORDS:
-- "يمين" / "على اليمين" = "right" / "on the right" → Position on the right side
-- "يسار" / "على اليسار" = "left" / "on the left" → Position on the left side  
-- "أمام" / "قدام" = "in front" → Position in the foreground
-- "خلف" / "وراء" = "behind" → Position in the background
-- "فوق" / "أعلى" = "above" / "top" → Position above or on top
-- "تحت" / "أسفل" = "below" / "bottom" → Position below or at bottom
-- "قريب" / "أقرب" = "close" / "closer" → Move closer to viewer
-- "بعيد" / "أبعد" = "far" / "farther" → Move farther from viewer
-
-QUANTITY AND NUMBER WORDS:
-- "شخص واحد" / "واحد بس" = "one person only" → Include exactly 1 person
-- "شخصين" / "اثنين" = "two people" → Include exactly 2 people  
-- "ثلاثة أشخاص" / "ثلاثة" = "three people" → Include exactly 3 people
-- "أربعة" / "أربع أشخاص" = "four people" → Include exactly 4 people
-- "خمسة" / "خمس أشخاص" = "five people" → Include exactly 5 people
-- "كتير ناس" / "ناس كثيرة" = "many people" → Include 5+ people in background
-
-IMPORTANT INTERPRETATION RULES:
-1. CHECK FOR NEGATION FIRST: Words like "لا" / "بدون" / "ما في" mean DO NOT include that element
-2. APPLY ALL USER REQUESTS LITERALLY - Do not dismiss any request as "mood" or "abstract concept"
-3. If user mentions ANY OBJECT/ANIMAL/PERSON WITHOUT negation, include it visibly in the scene
-4. If user mentions "ناس" or "أشخاص" (people) WITHOUT negation, MANDATORY: include actual human figures in the scene - DO NOT interpret this as mood, atmosphere, or visual storytelling
-5. If user mentions "منبهر" or "معجب" (amazed/impressed), show people with expressions of wonder, surprise, or admiration
-6. If user mentions interaction words like "يستعمل" (using) or "يتفاعل" (interacting), show people actively engaging with the product
-7. When adding people, use EXACT quantities if specified (شخصين = exactly 2 people)
-8. Use positioning words to place elements precisely (يمين = right side, فوق = above, etc.)
-9. Translate the MEANING and INTENT, not just literal words
-10. NEVER interpret ANY requests as "visual storytelling" or "mood" - make them CONCRETE and VISIBLE
-11. ALWAYS output your response in ENGLISH, even if the input is Arabic
-
-🚨 CRITICAL CGI QUALITY REQUIREMENTS:
-- ALL LIVING CREATURES must have PERFECT NATURAL PROPORTIONS
-- ANIMALS: Realistic head-to-body ratio, correct limb proportions, natural fur/skin texture
-- PEOPLE: Normal human anatomy, realistic facial features, proper body proportions  
-- NO DISTORTION or morphing - everything must look like real photography
-- SHARP FOCUS with HIGH DETAIL for all added elements
-- Professional CGI quality (Hollywood film standard)
-
-BE SPECIFIC about:
-- What SPECIFIC object to REMOVE from the scene (be precise - only that object)
-- What EXACT product to INSERT  
-- HOW it should look and be positioned
-- If user wants PEOPLE added, specify their positioning and emotions (amazed, impressed, interacting with product) - MANDATORY: Include actual human figures with realistic anatomy
-- If user wants ANIMALS added, specify natural realistic appearance (proper proportions, realistic fur/features)
-- Lighting and shadow matching requirements
-- WHAT TO PRESERVE (ceiling, walls, floor, other furniture)
-
-CRITICAL: When user requests people in Arabic ("ناس" / "أشخاص"), you MUST include actual human figures in the scene. Do NOT interpret this as "mood", "atmosphere", "visual storytelling", or "implied presence". Include visible people with clear facial expressions and body language.
-
-Write DIRECT COMMANDS in English for the AI image generator. Use action verbs like "Remove ONLY", "Replace", "Position", "Make sure", "Keep unchanged", "Preserve", "Render", "Add people", "Include human figures".
 `;
 
     const result = await model.generateContent([
@@ -775,143 +668,32 @@ export async function enhanceVideoPromptFromGeneratedImage(
     const isShortVideo = durationSeconds <= 5;
 
     const prompt = `
-🎬 PROFESSIONAL CGI VIDEO DIRECTOR ANALYSIS
+انت خبير cgi 🎯 قم بعمل برومبيت لتحويل هذه الصورة الثابتة الي صورة متحركة وذلك عن طريق موقع kling 
 
-🚨 CRITICAL: ONLY describe what you ACTUALLY SEE in the provided image. DO NOT invent, assume, or add elements that are not clearly visible.
+البداية لازم تحلل الصورة كويس جدا وتعرف ايه هي العناصر بالظبط وتركز علي العنصر المهم في الصورة الي هو اكبر عنصر
 
-ANALYZE this completed CGI image composition and provide EXPERT video production guidance:
+مع مراعاه طلب المستخدم: "${projectDetails.userDescription}" لو هو عايز يضيف شيء للفيديو
 
-📋 PROJECT SPECIFICATIONS:
-- Duration: ${durationSeconds} seconds (${isShortVideo ? 'SHORT' : 'MEDIUM'} format)
-- Audio Required: ${projectDetails.includeAudio ? 'YES' : 'NO'}
-- User Vision: ${projectDetails.userDescription}
-- Product Focus: ${projectDetails.productName || 'Main product in scene'}
+كتابة البرومبيت يكون كالتلي اعداد المشهد:
+- ايه اللي يتحرك خلال الـ${durationSeconds} ثواني؟
+- ايه الاكشن اللي يحصل؟
+- ايه التعبيرات اللي تتغير؟
+- الكاميرا تكون اذاي كل شيء بيتم اذاي بالظبط
 
-🎯 YOUR MISSION - Create PROFESSIONAL video production instructions:
+بمعني انت كخبير cgi لازم توضح كل شيء بالكامل عشان يحول الصورة الثابته دي لصورة متحركة بهدف استعارض المنتج الكبير بشكل جيد وجميل 
 
-🚨 SINGLE IMAGE ANIMATION RULES:
-- You are working with ONE STATIC IMAGE that needs to be ANIMATED into a video
-- DO NOT talk about "scenes", "transitions", or "Scene 1 and Scene 2" 
-- Focus on ANIMATING THE ELEMENTS within this single image
-- Create CAMERA MOVEMENTS around/through this single scene
-- Add SUBTLE MOTION to objects in the image (lighting effects, gentle movements)
-- NO scene transitions or cuts - this is one continuous shot
+🚨 قواعد الجودة الاجبارية - CGI فوتوريليستك:
+- كل الكائنات الحية اذا وجدت لازم تكون بنسب طبيعية مثالية
+- ممنوع التشويه: الوشوش والاجسام لازم تكون صح تشريحياً
 
-EXAMPLE GOOD SINGLE-IMAGE ANIMATIONS:
-- "Slow 360-degree camera rotation around the chandelier, maintaining focus throughout"
-- "Gentle zoom-in from wide room view to close-up of the main product"  
-- "Smooth horizontal pan across the scene, ending with upward tilt to ceiling"
-- "Subtle lighting flicker effects on LED lights"
-- "Camera slowly orbits the room while maintaining the product in center frame"
-
-EXAMPLE BAD DESCRIPTIONS (DO NOT USE):
-- "Transition between Scene 1 and Scene 2" ❌
-- "Cut to different angle" ❌ 
-- "Switch to another room" ❌
-
-🚨 VISUAL ACCURACY RULES:
-- ONLY reference elements, colors, and objects that are CLEARLY VISIBLE in the provided image
-- DO NOT mention colors, materials, or details that you cannot see directly
-- DO NOT invent or assume elements (like "green leaves" if not visible)
-- Base ALL descriptions on what is ACTUALLY shown in the image
-- If something is ambiguous or unclear, do not describe it
-
-CRITICAL USER REQUEST PROCESSING: The user request might be ANYTHING - animals, objects, people, colors, positions, lighting, emotions, etc. You MUST interpret ALL requests LITERALLY and apply them to the final video. Do NOT ignore or dismiss any user request as "mood" or "storytelling".
-
-UNIVERSAL REQUEST INTERPRETATION RULES FOR VIDEO:
-1. ANY request from the user MUST be implemented literally in the final video
-2. If user asks to ADD something → ADD it visibly and clearly in the video
-3. If user asks to CHANGE something → CHANGE it exactly as requested
-4. If user asks to REMOVE something → COMPLETELY ELIMINATE it with no traces remaining from the video
-5. If user specifies QUANTITIES → Use exact numbers (not approximate)
-6. If user specifies POSITIONS → Place elements exactly where requested in the video
-7. If user mentions COLORS → Apply those exact colors in the video
-8. If user describes EMOTIONS/EXPRESSIONS → Show them clearly on faces throughout the video
-9. NEVER interpret requests as "abstract concepts" - make them VISIBLE and CONCRETE in the video
-10. 🚨 CRITICAL: NEVER add people, humans, or characters unless EXPLICITLY mentioned in user request
-11. 🚨 DEFAULT SCENE: Product + Environment ONLY (no people unless requested)
-
-CRITICAL ARABIC LANGUAGE SUPPORT: The user vision might be in Arabic. You MUST understand and interpret Arabic properly:
-
-ARABIC PHRASES FOR PEOPLE AND OBJECTS:
-- "أضف ناس منبهرين بالمنتج" / "ضيف ناس منبهرين بالمنتج" = "Add people amazed by the product" → MANDATORY: Include actual human figures (2-4 people) in the video scene with visible expressions of amazement, wonder, or admiration while looking at or interacting with the product. Do NOT interpret this metaphorically.
-- "أضف أشخاص منبهرين بالمنتج" = "Add people amazed by the product" → MANDATORY: Same as above, include actual human people showing amazement, NOT just visual storytelling
-- "لا تضيف أشخاص" / "بدون ناس" / "ما في ناس" = "Don't add people" / "Without people" → Do NOT include any human figures
-- "شخص واحد" / "واحد منبهر" = "one person" → Include exactly 1 person
-- "شخصين" / "اثنين منبهرين" = "two people" → Include exactly 2 people
-- "ثلاثة أشخاص" / "ثلاث ناس" = "three people" → Include exactly 3 people
-- "أربعة" / "أربع أشخاص" = "four people" → Include exactly 4 people
-- "خمسة" / "خمس أشخاص" = "five people" → Include exactly 5 people
-- "كتير ناس" / "ناس كثيرة" = "many people" → Include 5+ people in background
-
-ARABIC VIDEO DIRECTION PHRASES:
-- "أضف حركة للكاميرا" = "Add camera movement" → Include smooth camera motion
-- "زوم على المنتج" = "Zoom on the product" → Focus closer on the product
-- "اعرض المنتج من كل الجهات" = "Show the product from all sides" → 360-degree or orbital camera movement
-- "خليه يتحرك ببطء" = "Make it move slowly" → Slow, cinematic camera movement
-- "أضف حركة سريعة" = "Add fast movement" → Dynamic, energetic camera work
-- "اعمل فيديو مثير" = "Make an exciting video" → Dramatic camera movements and transitions
-- "خليه يبان أحسن" = "Make it look better" → Enhance visual appeal through camera work
-
-IMPORTANT VIDEO INTERPRETATION RULES:
-1. CHECK FOR NEGATION FIRST: Words like "لا" / "بدون" / "ما في" mean DO NOT include that element
-2. If user mentions "ناس" or "أشخاص" (people) WITHOUT negation, MANDATORY: include actual human figures in the video - DO NOT interpret this as mood, atmosphere, or visual storytelling
-3. If user mentions "منبهر" or "معجب" (amazed/impressed), show people with expressions of wonder, surprise, or admiration
-4. When adding people, use EXACT quantities if specified (شخصين = exactly 2 people)
-5. If user mentions camera-related Arabic words like "كاميرا" (camera) or "تصوير" (filming), focus on camera movements
-6. If user mentions speed like "بطء" (slow) or "سريع" (fast), adjust the pacing accordingly
-7. If user mentions showing "من كل الجهات" (from all sides), suggest orbital or multi-angle shots
-8. Translate the EMOTION and ENERGY level, not just literal words
-9. NEVER interpret people requests as "visual storytelling" or "mood" - they mean literal human figures
-10. ALWAYS output your response in ENGLISH, even if the input is Arabic
-
-CRITICAL: When user requests people in Arabic ("ناس" / "أشخاص"), you MUST include actual human figures in your video brief. Do NOT interpret this as "mood", "atmosphere", "visual storytelling", or "implied presence". Include visible people with clear facial expressions and body language.
-
-1. 📹 CAMERA MOVEMENT ANALYSIS:
-   - Study the composition, lighting, and spatial relationships
-   - Determine the MOST CINEMATIC camera movements for this specific scene
-   - Consider: dolly, pan, tilt, zoom, orbit, push-in, pull-out, slider movements
-   - Match movement to the ${durationSeconds}-second timeframe
-   - INTERPRET user's Arabic request for movement style and energy
-
-2. 🎭 CINEMATIC DIRECTION:
-   - Analyze the scene's mood, atmosphere, and visual weight
-   - Suggest the most compelling visual narrative flow
-   - Define key moments and transitions within ${durationSeconds} seconds
-   - Consider product showcase timing and emphasis points
-   - ADAPT to user's Arabic vision for video style and energy
-
-${projectDetails.includeAudio ? `
-3. 🔊 NATURAL AUDIO DESIGN:
-   - Analyze the environment and suggest realistic ambient sounds
-   - Consider material-specific sounds (metal, wood, fabric, etc.)
-   - Suggest atmospheric audio that enhances the scene's reality
-   - Include subtle sound effects that match any suggested movements
-` : ''}
-
-OUTPUT REQUIREMENTS:
-Create THREE separate sections:
-
-📹 CAMERA_MOVEMENTS:
-"[Specific technical directions for camera animation - be precise about timing, speed, and trajectory]"
-
-🎭 CINEMATIC_DIRECTION:
-"[Detailed visual narrative and scene progression for the ${durationSeconds}-second video]"
-
-${projectDetails.includeAudio ? `
-🔊 AUDIO_PROMPT:
-"[Natural, environmental audio description that matches the scene and any movements - be specific about sound types, intensity, and timing]"
-` : ''}
-
-CRITICAL GUIDELINES:
-- Base ALL suggestions on the actual visual content of this specific image
-- Prioritize REALISTIC, achievable movements over complex cinematography
-- Ensure ${durationSeconds}-second timing is perfectly structured
-- Focus on showcasing the product naturally within the scene
-- Maintain the established lighting and mood throughout
-- Suggest movements that enhance, not distract from, the composition
-
-Be SPECIFIC and ACTIONABLE - these instructions go directly to AI video generation.
+🎯 اخرج الرد بصيغة JSON صحيحة:
+{
+  "imageScenePrompt": "وصف العناصر الثابتة",
+  "videoMotionPrompt": "وصف الحركة بس",
+  "combinedVideoPrompt": "البرومبت المتكامل",
+  "qualityNegativePrompt": "الاشياء اللي نتجنبها",
+  "motionInstructions": "تفاصيل التوقيت والكاميرا"
+}
 `;
 
     console.log("🤖 Sending analysis request to Gemini...");
@@ -931,26 +713,57 @@ Be SPECIFIC and ACTIONABLE - these instructions go directly to AI video generati
 
     console.log("✅ Gemini video analysis complete:", {
       responseLength: text.length,
-      containsCameraMovements: text.includes('CAMERA_MOVEMENTS'),
-      containsCinematicDirection: text.includes('CINEMATIC_DIRECTION'),
-      containsAudioPrompt: text.includes('AUDIO_PROMPT')
+      containsJSON: text.includes('{') && text.includes('}'),
+      containsVideoMotionPrompt: text.includes('videoMotionPrompt'),
+      containsCombinedPrompt: text.includes('combinedVideoPrompt')
     });
 
-    // Parse the structured response
-    const cameraMovementsMatch = text.match(/CAMERA_MOVEMENTS:\s*"([^"]+)"/);
-    const cinematicDirectionMatch = text.match(/CINEMATIC_DIRECTION:\s*"([^"]+)"/);
-    const audioPromptMatch = text.match(/AUDIO_PROMPT:\s*"([^"]+)"/);
+    // Parse the JSON response
+    let parsedResponse: {
+      imageScenePrompt?: string;
+      videoMotionPrompt?: string;
+      combinedVideoPrompt?: string;
+      qualityNegativePrompt?: string;
+      motionInstructions?: string;
+    } = {};
+    
+    try {
+      // Try to extract JSON from response
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        parsedResponse = JSON.parse(jsonMatch[0]);
+        console.log("Successfully parsed Gemini JSON video response:", {
+          hasImageScene: !!parsedResponse.imageScenePrompt,
+          hasVideoMotion: !!parsedResponse.videoMotionPrompt,
+          hasCombined: !!parsedResponse.combinedVideoPrompt,
+          hasMotionInstructions: !!parsedResponse.motionInstructions
+        });
+      } else {
+        throw new Error("No JSON found in response");
+      }
+    } catch (parseError) {
+      console.warn("Failed to parse Gemini JSON video response, using text fallback:", parseError);
+      // Use entire text as combined prompt if JSON parsing fails
+      parsedResponse = {
+        combinedVideoPrompt: text,
+        motionInstructions: `${durationSeconds}-second video with smooth camera movement`,
+        videoMotionPrompt: text
+      };
+    }
 
-    const cameraMovements = cameraMovementsMatch ? cameraMovementsMatch[1] : 
+    // Map JSON response to expected output format
+    const cameraMovements = parsedResponse.motionInstructions || 
       `Smooth ${durationSeconds}-second camera movement showcasing the product with cinematic flow`;
     
-    const cinematicDirection = cinematicDirectionMatch ? cinematicDirectionMatch[1] : 
+    const cinematicDirection = parsedResponse.videoMotionPrompt || 
       `Professional ${durationSeconds}-second product showcase with dynamic visual progression`;
     
-    const audioPrompt = audioPromptMatch ? audioPromptMatch[1] : undefined;
+    const audioPrompt = projectDetails.includeAudio ? 
+      "Natural ambient environmental sounds matching the scene atmosphere with subtle product-related audio effects" : 
+      undefined;
 
-    // Create the enhanced video prompt for Kling AI
-    const enhancedVideoPrompt = `
+    // Create the enhanced video prompt for Kling AI using the combined prompt from JSON
+    const enhancedVideoPrompt = parsedResponse.combinedVideoPrompt || `
 PROFESSIONAL CGI VIDEO GENERATION:
 
 🎬 CINEMATOGRAPHY:
