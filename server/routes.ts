@@ -325,14 +325,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Credit purchase endpoint (placeholder for Stripe integration)
+  // Credit package definitions - matching frontend packages
+  const CREDIT_PACKAGES = {
+    tester: { credits: 100, price: 10.00, name: "Tester" },
+    starter: { credits: 250, price: 25.00, name: "Starter" },
+    pro: { credits: 550, price: 50.00, name: "Pro" },
+    business: { credits: 1200, price: 100.00, name: "Business" }
+  };
+
+  // Credit purchase endpoint with package validation
   app.post('/api/purchase-credits', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const { amount, credits } = req.body;
+      const { amount, credits, packageId } = req.body;
       
-      if (!amount || !credits) {
-        return res.status(400).json({ message: "Missing amount or credits" });
+      if (!amount || !credits || !packageId) {
+        return res.status(400).json({ message: "Missing amount, credits, or packageId" });
+      }
+
+      // Validate package against defined packages
+      const validPackage = CREDIT_PACKAGES[packageId as keyof typeof CREDIT_PACKAGES];
+      if (!validPackage || validPackage.price !== amount || validPackage.credits !== credits) {
+        return res.status(400).json({ message: "Invalid package selected" });
       }
 
       // Create Stripe payment intent
@@ -344,6 +358,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: {
           userId,
           credits: credits.toString(),
+          packageId: packageId
+        },
+        automatic_payment_methods: {
+          enabled: true,
         },
       });
 
@@ -357,6 +375,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         clientSecret: paymentIntent.client_secret,
         transactionId: transaction.id,
+        paymentIntentId: paymentIntent.id
       });
     } catch (error) {
       console.error("Error creating payment:", error);
@@ -375,14 +394,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       let event;
-      if (process.env.STRIPE_WEBHOOK_SECRET) {
-        // Production: verify webhook signature
-        event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-      } else {
-        // Development: parse webhook without verification (UNSAFE for production)
-        console.warn('⚠️  Stripe webhook running without signature verification - development mode only!');
-        event = JSON.parse(req.body.toString());
-      }
+      const webhookSecret = 'whsec_BeQvwE4XLjStsFSMi9Bkl6Y1s8oJ1bIp'; // Using the provided webhook secret
+      
+      // Production: verify webhook signature with the actual secret
+      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
       
       if (event.type === 'payment_intent.succeeded') {
         const paymentIntent = event.data.object;
