@@ -182,6 +182,8 @@ CRITICAL PRESERVATION RULES:
 Generate a COMMAND-STYLE prompt like this example:
 "Remove ONLY the [existing object] completely from the scene and replace it with the [exact product name] from the reference image. The [product] should appear ultra-realistic in CGI style, [size description], positioned [placement details]. Make sure the lighting and shadows match the [lighting description]. Keep ALL other elements including ceiling, walls, floor, and furniture completely unchanged. The [product] should have [texture/material details], and look [style description]. Render in high resolution with cinematic composition and sharp details."
 
+🚨 IMPORTANT: Do NOT add people, humans, or characters unless EXPLICITLY requested by the user in their description. The default scene should only contain the product and environment.
+
 User Request: ${userDescription}
 
 CRITICAL USER REQUEST PROCESSING: The user request might be ANYTHING - animals, objects, people, colors, positions, lighting, emotions, etc. You MUST interpret ALL requests LITERALLY and apply them to the final image. Do NOT ignore or dismiss any user request as "mood" or "storytelling".
@@ -196,6 +198,8 @@ UNIVERSAL REQUEST INTERPRETATION RULES:
 7. If user mentions COLORS → Apply those exact colors
 8. If user describes EMOTIONS/EXPRESSIONS → Show them clearly on faces
 9. NEVER interpret requests as "abstract concepts" - make them VISIBLE and CONCRETE
+10. 🚨 CRITICAL: NEVER add people, humans, or characters unless EXPLICITLY mentioned in user request
+11. 🚨 DEFAULT SCENE: Product + Environment ONLY (no people unless requested)
 
 CRITICAL ARABIC LANGUAGE SUPPORT: The user request might be in Arabic. You MUST understand and interpret Arabic properly:
 
