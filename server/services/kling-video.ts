@@ -225,24 +225,31 @@ export async function generateVideoWithKling(
     }
 
     const result = await response.json();
+    
+    // Handle different response formats from Kling AI
+    const taskData = result.data || result; // New format has data wrapper
+    const taskId = taskData.task_id;
+    
     console.log("Kling AI request submitted successfully:", {
-      taskId: result.task_id,
-      status: result.status,
-      fullResponse: result
+      taskId: taskId,
+      status: taskData.status,
+      fullResponse: result,
+      responseFormat: result.data ? 'wrapped' : 'direct'
     });
 
     // Validate that we got a task ID
-    if (!result.task_id) {
+    if (!taskId) {
       console.error("❌ CRITICAL: Kling AI didn't return a task_id!", {
         response: result,
-        hasTaskId: !!result.task_id,
-        responseKeys: Object.keys(result)
+        data: result.data,
+        hasTaskId: !!taskId,
+        responseKeys: Object.keys(result),
+        dataKeys: result.data ? Object.keys(result.data) : null
       });
       throw new Error(`Kling AI API error: No task_id returned. Response: ${JSON.stringify(result)}`);
     }
 
     // Poll for completion
-    const taskId = result.task_id;
     let attempts = 0;
     const maxAttempts = 60; // 10 minutes max (10s intervals)
     
