@@ -1,0 +1,67 @@
+{
+  "task_id": "11835b4a-539d-4a2b-a093-111ed2479d73",
+  "model": "kling",
+  "task_type": "video_generation",
+  "status": "completed",
+  "config": {
+    "service_mode": "",
+    "webhook_config": {
+      "endpoint": "",
+      "secret": ""
+    }
+  },
+  "input": {
+    "aspect_ratio": "16:9",
+    "cfg_scale": 0.5,
+    "duration": 5,
+    "image_url": "https://res.cloudinary.com/dqtsski2w/image/upload/v1758244130/cgi-generated/cgi-generated/generated-1758244129904-274734732.png",
+    "mode": "std",
+    "negative_prompt": "deformed faces, distorted body proportions, extra limbs, malformed anatomy, unnatural head size, distorted animal anatomy, unnatural proportions, melting fur, deformed limbs, wrong body shape, blurry, low quality, amateur CGI, morphing, melting, unnatural blending, unrealistic fur texture",
+    "prompt": "The 5-second video begins with the cat sitting calmly on the sofa. The cat then playfully leaps from the sofa, running a short distance before gracefully stopping on the sofa once more. Its eyes widen as it looks up, mesmerized by the glowing LED chandelier.  The cat maintains a playful, intrigued expression.  The camera remains stationary throughout the entire sequence, focusing on the cat's movements and reactions to the chandelier. There are no cuts or transitions.\n\nCamera and Production: \nPROFESSIONAL CGI VIDEO GENERATION:\n\n🎬 CINEMATOGRAPHY:\nSmooth 5-second camera movement showcasing the product with cinematic flow\n\n🎭 VISUAL NARRATIVE:\nProfessional 5-second product showcase with dynamic visual progression\n\n⏱️ TIMING: 5 seconds\n🎯 FOCUS: Maintain product prominence throughout the sequence\n💫 QUALITY: Ultra-realistic CGI with seamless motion and perfect lighting continuity\n📐 ASPECT: Professional composition with balanced framing\n✨ STYLE: Cinematic, commercial-grade video production\n\nTECHNICAL REQUIREMENTS:\n- Smooth, professional camera work\n- Consistent lighting and shadows\n- Natural product movement within scene\n- High-resolution output (1080p minimum)\n- Fluid 5-second duration\n- Commercial-quality post-production feel\n"
+  },
+  "output": {
+    "video_url": "https://storage.theapi.app/videos/290215634307303.mp4",
+    "type": "m2v_img2video",
+    "status": 99,
+    "works": [
+      {
+        "content_type": "video",
+        "status": 99,
+        "type": "m2v_img2video",
+        "cover": {
+          "resource": "https://s15-kling.klingai.com/kimg/EMXN1y8qgwEKBnVwbG9hZBIOeWxhYi1zdHVudC1zZ3AaaXNlL2FpX3BvcnRhbF9zZ3BfbTJ2X2ltZzJ2aWRlb18xMDgwcF9zdGRfdjE2X2Rpc3RpbGwvNjE3ZWI3ZmQtYWI1Mi00NzEzLWEwMjItOWVmMjdmNTc0MDBhX3ZpZGVvX2NvdmVyLmpwZw.origin?x-kcdn-pid=112372",
+          "resource_without_watermark": "",
+          "height": 992,
+          "width": 896,
+          "duration": 0
+        },
+        "video": {
+          "resource": "https://v15-kling.klingai.com/bs2/upload-ylab-stunt-sgp/se/ai_portal_sgp_m2v_img2video_1080p_std_v16_distill/b00c37a3-c3b9-446e-9634-dc4f103538ca_video.mp4?x-kcdn-pid=112372",
+          "resource_without_watermark": "https://storage.theapi.app/videos/290215634307303.mp4",
+          "height": 992,
+          "width": 896,
+          "duration": 5100
+        }
+      }
+    ]
+  },
+  "meta": {
+    "created_at": "2025-09-19T01:08:57.318403847Z",
+    "started_at": "2025-09-19T01:08:57.927586595Z",
+    "ended_at": "2025-09-19T01:10:39.036948669Z",
+    "usage": {
+      "type": "point",
+      "frozen": 2600000,
+      "consume": 2600000
+    },
+    "is_using_private_pool": false
+  },
+  "detail": null,
+  "logs": null,
+  "error": {
+    "code": 0,
+    "raw_message": "",
+    "message": "",
+    "detail": null
+  }
+}
