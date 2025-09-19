@@ -3,6 +3,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Rocket, Play, Camera, Bot, Film, Star, Check } from "lucide-react";
 import { AuthDialog } from "@/components/auth/AuthDialog";
+import productImage from "@assets/generated_images/Modern_smartphone_product_photo_8515c516.png";
+import sceneImage from "@assets/generated_images/Modern_living_room_scene_8d384239.png";
+import resultImage from "@assets/generated_images/CGI_smartphone_composite_result_bc061ac4.png";
 
 export default function Landing() {
   return (
@@ -62,6 +65,10 @@ export default function Landing() {
                 variant="outline" 
                 size="lg" 
                 className="glass-card hover:bg-white/20 text-white border-white/20"
+                onClick={() => {
+                  const exampleSection = document.getElementById('example-section');
+                  exampleSection?.scrollIntoView({ behavior: 'smooth' });
+                }}
                 data-testid="watch-demo-button"
               >
                 <Play className="ml-2 h-5 w-5" />
@@ -95,7 +102,7 @@ export default function Landing() {
             </div>
 
             {/* Before/After Examples */}
-            <Card className="glass-card">
+            <Card id="example-section" className="glass-card">
               <CardContent className="p-8">
                 <h2 className="text-3xl font-bold mb-8">أمثلة على النتائج</h2>
                 <div className="grid md:grid-cols-2 gap-8">
@@ -103,13 +110,13 @@ export default function Landing() {
                     <h4 className="text-lg font-semibold mb-4">قبل - الصور الأصلية</h4>
                     <div className="grid grid-cols-2 gap-4">
                       <img 
-                        src="https://via.placeholder.com/400x300/6366f1/ffffff?text=Product+Image" 
+                        src={productImage} 
                         alt="منتج - هاتف ذكي" 
                         className="rounded-lg shadow-lg"
                         data-testid="example-product-image"
                       />
                       <img 
-                        src="https://via.placeholder.com/400x300/8b5cf6/ffffff?text=Scene+Image" 
+                        src={sceneImage} 
                         alt="مشهد - غرفة معيشة عصرية" 
                         className="rounded-lg shadow-lg"
                         data-testid="example-scene-image"
@@ -119,7 +126,7 @@ export default function Landing() {
                   <div>
                     <h4 className="text-lg font-semibold mb-4">بعد - النتيجة النهائية</h4>
                     <img 
-                      src="https://via.placeholder.com/600x400/10b981/ffffff?text=CGI+Result" 
+                      src={resultImage} 
                       alt="نتيجة CGI - هاتف مدمج في المشهد" 
                       className="rounded-lg shadow-lg w-full"
                       data-testid="example-result-image"
@@ -143,13 +150,13 @@ export default function Landing() {
               <Card className="glass-card">
                 <CardContent className="p-6">
                   <div className="flex items-center mb-4">
-                    <Badge className="credit-badge">جديد</Badge>
-                    <h3 className="text-lg font-bold mr-2">Fal.ai FLUX Schnell</h3>
+                    <Badge className="credit-badge">محسّن</Badge>
+                    <h3 className="text-lg font-bold mr-2">Google Gemini AI</h3>
                   </div>
-                  <p className="text-muted-foreground mb-4">أسرع إنتاج للصور بتكلفة $0.003 فقط لكل صورة</p>
+                  <p className="text-muted-foreground mb-4">إنتاج صور عالية الجودة بتكلفة معقولة - 2 كريدت لكل صورة</p>
                   <div className="flex items-center">
                     <Star className="h-4 w-4 text-yellow-500 ml-1" />
-                    <span className="text-sm">أسرع بـ 4 مرات</span>
+                    <span className="text-sm">جودة فائقة</span>
                   </div>
                 </CardContent>
               </Card>
@@ -157,13 +164,13 @@ export default function Landing() {
               <Card className="glass-card">
                 <CardContent className="p-6">
                   <div className="flex items-center mb-4">
-                    <Badge className="credit-badge">محسن</Badge>
-                    <h3 className="text-lg font-bold mr-2">Kling AI عبر PiAPI</h3>
+                    <Badge className="credit-badge">متطور</Badge>
+                    <h3 className="text-lg font-bold mr-2">Kling AI Video</h3>
                   </div>
-                  <p className="text-muted-foreground mb-4">فيديوهات CGI بجودة سينمائية بتكلفة $0.13 لكل فيديو</p>
+                  <p className="text-muted-foreground mb-4">فيديوهات CGI بجودة عالية - 10 كريدت (قصير) أو 18 كريدت (طويل)</p>
                   <div className="flex items-center">
                     <Check className="h-4 w-4 text-green-500 ml-1" />
-                    <span className="text-sm">جودة 4K</span>
+                    <span className="text-sm">جودة HD+</span>
                   </div>
                 </CardContent>
               </Card>
@@ -172,9 +179,9 @@ export default function Landing() {
                 <CardContent className="p-6">
                   <div className="flex items-center mb-4">
                     <Badge className="credit-badge">ذكي</Badge>
-                    <h3 className="text-lg font-bold mr-2">Google Gemini AI</h3>
+                    <h3 className="text-lg font-bold mr-2">تحسين الأوصاف</h3>
                   </div>
-                  <p className="text-muted-foreground mb-4">تحسين أوتوماتيكي لوصف المشاريع لنتائج أفضل</p>
+                  <p className="text-muted-foreground mb-4">تحسين أوتوماتيكي لوصف المشاريع باستخدام Gemini AI</p>
                   <div className="flex items-center">
                     <Bot className="h-4 w-4 text-blue-500 ml-1" />
                     <span className="text-sm">تحسين ذكي</span>
