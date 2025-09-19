@@ -789,6 +789,26 @@ ANALYZE this completed CGI image composition and provide EXPERT video production
 
 🎯 YOUR MISSION - Create PROFESSIONAL video production instructions:
 
+🚨 SINGLE IMAGE ANIMATION RULES:
+- You are working with ONE STATIC IMAGE that needs to be ANIMATED into a video
+- DO NOT talk about "scenes", "transitions", or "Scene 1 and Scene 2" 
+- Focus on ANIMATING THE ELEMENTS within this single image
+- Create CAMERA MOVEMENTS around/through this single scene
+- Add SUBTLE MOTION to objects in the image (lighting effects, gentle movements)
+- NO scene transitions or cuts - this is one continuous shot
+
+EXAMPLE GOOD SINGLE-IMAGE ANIMATIONS:
+- "Slow 360-degree camera rotation around the chandelier, maintaining focus throughout"
+- "Gentle zoom-in from wide room view to close-up of the main product"  
+- "Smooth horizontal pan across the scene, ending with upward tilt to ceiling"
+- "Subtle lighting flicker effects on LED lights"
+- "Camera slowly orbits the room while maintaining the product in center frame"
+
+EXAMPLE BAD DESCRIPTIONS (DO NOT USE):
+- "Transition between Scene 1 and Scene 2" ❌
+- "Cut to different angle" ❌ 
+- "Switch to another room" ❌
+
 🚨 VISUAL ACCURACY RULES:
 - ONLY reference elements, colors, and objects that are CLEARLY VISIBLE in the provided image
 - DO NOT mention colors, materials, or details that you cannot see directly
