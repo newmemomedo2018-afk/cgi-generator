@@ -1,0 +1,48 @@
+06:33:11.689 Running build in Washington, D.C., USA (East) – iad1
+06:33:11.689 Build machine configuration: 2 cores, 8 GB
+06:33:11.720 Cloning github.com/newmemomedo2018-afk/cgi-generator-v2 (Branch: main, Commit: 1060d83)
+06:33:11.728 Skipping build cache, deployment was triggered without cache.
+06:33:12.708 Cloning completed: 988.000ms
+06:33:13.082 Running "vercel build"
+06:33:13.471 Vercel CLI 48.0.2
+06:33:14.285 Installing dependencies...
+06:33:18.117 npm warn deprecated q@1.5.1: You or someone you depend on is using Q, the JavaScript Promise library that gave JavaScript developers strong feelings about promises. They can almost certainly migrate to the native JavaScript promise now. Thank you literally everyone for joining me in this bet against the odds. Be excellent to each other.
+06:33:18.117 npm warn deprecated
+06:33:18.117 npm warn deprecated (For a CapTP with native promises, see @endo/eventual-send and @endo/captp)
+06:33:19.442 npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is
+06:33:19.461 npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is
+06:33:25.292 
+06:33:25.293 added 568 packages in 11s
+06:33:25.294 
+06:33:25.294 75 packages are looking for funding
+06:33:25.294   run `npm fund` for details
+06:33:25.459 
+06:33:25.460 > rest-express@1.0.0 build
+06:33:25.460 > vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+06:33:25.460 
+06:33:25.717 [36mvite v5.4.19 [32mbuilding for production...[36m[39m
+06:33:25.764 transforming...
+06:33:26.202 Browserslist: browsers data (caniuse-lite) is 11 months old. Please run:
+06:33:26.203   npx update-browserslist-db@latest
+06:33:26.203   Why you should do it regularly: https://github.com/browserslist/update-db#readme
+06:33:30.018 [32m✓[39m 1734 modules transformed.
+06:33:30.297 rendering chunks...
+06:33:30.307 computing gzip size...
+06:33:30.321 [2m../dist/public/[22m[32mindex.html                                                    [39m[1m[2m    1.95 kB[22m[1m[22m[2m │ gzip:   0.74 kB[22m
+06:33:30.322 [2m../dist/public/[22m[2massets/[22m[32mModern_smartphone_product_photo_8515c516-CZcy4XOW.png  [39m[1m[2m  481.85 kB[22m[1m[22m
+06:33:30.325 [2m../dist/public/[22m[2massets/[22m[32mModern_living_room_scene_8d384239-CSvMf7zk.png         [39m[1m[2m1,392.27 kB[22m[1m[22m
+06:33:30.325 [2m../dist/public/[22m[2massets/[22m[32mCGI_smartphone_composite_result_bc061ac4-Y-KPBHYW.png  [39m[1m[2m1,413.66 kB[22m[1m[22m
+06:33:30.326 [2m../dist/public/[22m[2massets/[22m[35mindex-zECSGvMO.css                                     [39m[1m[2m   68.38 kB[22m[1m[22m[2m │ gzip:  12.03 kB[22m
+06:33:30.326 [2m../dist/public/[22m[2massets/[22m[36mindex-BtWoAyzX.js                                      [39m[1m[2m  406.70 kB[22m[1m[22m[2m │ gzip: 124.53 kB[22m
+06:33:30.326 [32m✓ built in 4.58s[39m
+06:33:30.363 
+06:33:30.363   dist/index.js  125.2kb
+06:33:30.363 
+06:33:30.364 ⚡ Done in 12ms
+06:33:40.338 Build Completed in /vercel/output [26s]
+06:33:40.680 Deploying outputs...
+06:33:48.618 Deployment completed
+06:33:49.429 Creating build cache...
+06:34:13.220 Created build cache: 23.790s
+06:34:13.221 Uploading build cache [103.52 MB]
+06:34:14.424 Build cache uploaded: 1.202s
