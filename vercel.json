@@ -8,10 +8,15 @@
       "use": "@vercel/node"
     }
   ],
+  "functions": {
+    "dist/index.js": {
+      "maxDuration": 30
+    }
+  },
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "dist/index.js"
+      "dest": "/dist/index.js"
     },
     {
       "handle": "filesystem"
