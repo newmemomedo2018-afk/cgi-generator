@@ -1,0 +1,72 @@
+~/workspace$ # 1. ارجع للـ main branch
+git checkout main
+
+# 2. دلوقتي جرب git status
+git status
+
+# 3. لو في ملفات modified، اعمل commit
+git add .
+git commit -m "fix conflicts and sync"
+
+# 4. اسحب التحديثات من GitHub
+git pull origin main
+
+# 5. ادفع التغييرات
+git push origin main
+Warning: you are leaving 1 commit behind, not connected to
+any of your branches:
+
+  09b6b3c resolve merge conflicts
+
+If you want to keep it by creating a new branch, this may be a good time
+to do so with:
+
+ git branch <new-branch-name> 09b6b3c
+
+Switched to branch 'main'
+Your branch and 'origin/main' have diverged,
+and have 1 and 9 different commits each, respectively.
+  (use "git pull" if you want to integrate the remote branch with yours)
+On branch main
+Your branch and 'origin/main' have diverged,
+and have 1 and 9 different commits each, respectively.
+  (use "git pull" if you want to integrate the remote branch with yours)
+
+Last command done (1 command done):
+   pick f6742d3 remove vercel.json - use framework detection
+No commands remaining.
+You are currently editing a commit while rebasing branch 'main' on 'e4c3d93'.
+  (use "git commit --amend" to amend the current commit)
+  (use "git rebase --continue" once you are satisfied with your changes)
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+    attached_assets/Pasted-fatal-There-is-no-merge-to-abort-MERGE-HEAD-missing-error-Pulling-is-not-possible-because-you-h-1758330219973_1758330219974.txt
+
+nothing added to commit but untracked files present (use "git add" to track)
+[main 02e45bc] fix conflicts and sync
+ 1 file changed, 25 insertions(+)
+ create mode 100644 attached_assets/Pasted-fatal-There-is-no-merge-to-abort-MERGE-HEAD-missing-error-Pulling-is-not-possible-because-you-h-1758330219973_1758330219974.txt
+From https://github.com/newmemomedo2018-afk/cgi-generator
+ * branch            main       -> FETCH_HEAD
+hint: You have divergent branches and need to specify how to reconcile them.
+hint: You can do so by running one of the following commands sometime before
+hint: your next pull:
+hint:
+hint:   git config pull.rebase false  # merge
+hint:   git config pull.rebase true   # rebase
+hint:   git config pull.ff only       # fast-forward only
+hint:
+hint: You can replace "git config" with "git config --global" to set a default
+hint: preference for all repositories. You can also pass --rebase, --no-rebase,
+hint: or --ff-only on the command line to override the configured default per
+hint: invocation.
+fatal: Need to specify how to reconcile divergent branches.
+To https://github.com/newmemomedo2018-afk/cgi-generator.git
+ ! [rejected]        main -> main (non-fast-forward)
+error: failed to push some refs to 'https://github.com/newmemomedo2018-afk/cgi-generator.git'
+hint: Updates were rejected because the tip of your current branch is behind
+hint: its remote counterpart. If you want to integrate the remote changes,
+hint: use 'git pull' before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+~/workspace$ 

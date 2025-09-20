@@ -1,0 +1,54 @@
+04:05:42.804 Running build in Washington, D.C., USA (East) – iad1
+04:05:42.805 Build machine configuration: 2 cores, 8 GB
+04:05:42.831 Cloning github.com/newmemomedo2018-afk/cgi-generator (Branch: main, Commit: f6742d3)
+04:05:44.321 Cloning completed: 1.490s
+04:05:44.424 Restored build cache from previous deployment (GYDY4DA8mvnDhDGB6HvEcG84c5gW)
+04:05:44.931 Running "vercel build"
+04:05:45.428 Vercel CLI 48.0.2
+04:05:46.095 Running "install" command: `npm install`...
+04:05:48.791 
+04:05:48.791 up to date, audited 569 packages in 2s
+04:05:48.792 
+04:05:48.792 75 packages are looking for funding
+04:05:48.792   run `npm fund` for details
+04:05:48.844 
+04:05:48.844 10 vulnerabilities (3 low, 7 moderate)
+04:05:48.844 
+04:05:48.844 To address issues that do not require attention, run:
+04:05:48.844   npm audit fix
+04:05:48.845 
+04:05:48.845 To address all issues (including breaking changes), run:
+04:05:48.845   npm audit fix --force
+04:05:48.845 
+04:05:48.845 Run `npm audit` for details.
+04:05:48.974 Running "npm run build"
+04:05:49.075 
+04:05:49.078 > rest-express@1.0.0 build
+04:05:49.078 > vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+04:05:49.078 
+04:05:49.366 [36mvite v5.4.19 [32mbuilding for production...[36m[39m
+04:05:49.415 transforming...
+04:05:49.736 Browserslist: browsers data (caniuse-lite) is 11 months old. Please run:
+04:05:49.736   npx update-browserslist-db@latest
+04:05:49.736   Why you should do it regularly: https://github.com/browserslist/update-db#readme
+04:05:53.670 [32m✓[39m 1734 modules transformed.
+04:05:53.975 rendering chunks...
+04:05:53.987 computing gzip size...
+04:05:54.002 [2m../dist/public/[22m[32mindex.html                                                    [39m[1m[2m    1.95 kB[22m[1m[22m[2m │ gzip:   0.74 kB[22m
+04:05:54.002 [2m../dist/public/[22m[2massets/[22m[32mModern_smartphone_product_photo_8515c516-CZcy4XOW.png  [39m[1m[2m  481.85 kB[22m[1m[22m
+04:05:54.003 [2m../dist/public/[22m[2massets/[22m[32mModern_living_room_scene_8d384239-CSvMf7zk.png         [39m[1m[2m1,392.27 kB[22m[1m[22m
+04:05:54.003 [2m../dist/public/[22m[2massets/[22m[32mCGI_smartphone_composite_result_bc061ac4-Y-KPBHYW.png  [39m[1m[2m1,413.66 kB[22m[1m[22m
+04:05:54.003 [2m../dist/public/[22m[2massets/[22m[35mindex-zECSGvMO.css                                     [39m[1m[2m   68.38 kB[22m[1m[22m[2m │ gzip:  12.03 kB[22m
+04:05:54.003 [2m../dist/public/[22m[2massets/[22m[36mindex-BtWoAyzX.js                                      [39m[1m[2m  406.70 kB[22m[1m[22m[2m │ gzip: 124.53 kB[22m
+04:05:54.004 [32m✓ built in 4.61s[39m
+04:05:54.066 
+04:05:54.066   dist/index.js  124.9kb
+04:05:54.066 
+04:05:54.066 ⚡ Done in 15ms
+04:05:54.139 Build Completed in /vercel/output [8s]
+04:05:54.238 Deploying outputs...
+04:05:56.821 Deployment completed
+04:05:57.616 Creating build cache...
+04:06:12.742 Created build cache: 15.128s
+04:06:12.744 Uploading build cache [103.52 MB]
+04:06:14.474 Build cache uploaded: 1.731s
