@@ -1,10 +1,14 @@
 import { v2 as cloudinary } from 'cloudinary';
 
-// Configure Cloudinary
+// Configure Cloudinary - NEVER use hardcoded values in production
+if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+  throw new Error('Missing required Cloudinary environment variables: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET');
+}
+
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || "dqtsski2w",
-  api_key: process.env.CLOUDINARY_API_KEY || "882716225516264",
-  api_secret: process.env.CLOUDINARY_API_SECRET || "k18dJOendyCp95RzyFhLAxbQW2A",
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 export async function uploadToCloudinary(buffer: Buffer, filename: string): Promise<string> {

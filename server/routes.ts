@@ -9,6 +9,7 @@ import { promises as fs, createReadStream, existsSync, mkdirSync } from 'fs';
 import Stripe from 'stripe';
 import path from 'path';
 import { enhancePromptWithGemini, generateImageWithGemini } from './services/gemini';
+import { uploadToCloudinary } from './services/cloudinary';
 import multer from 'multer';
 
 import { COSTS, CREDIT_PACKAGES } from '@shared/constants';
@@ -42,53 +43,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No file uploaded" });
       }
       
-      // Configure Cloudinary
-      const { v2: cloudinary } = await import('cloudinary');
-      cloudinary.config({
-        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-        api_key: process.env.CLOUDINARY_API_KEY,
-        api_secret: process.env.CLOUDINARY_API_SECRET
-      });
-      
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      const publicId = `user-uploads/${uniqueSuffix}`;
-      
+      // Use the centralized Cloudinary service
       console.log("Uploading to Cloudinary:", {
         originalName: req.file.originalname,
         fileSize: req.file.size,
-        publicId
       });
       
-      // Upload to Cloudinary
-      const cloudinaryResult = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          {
-            resource_type: 'auto',
-            public_id: publicId,
-            quality: 'auto:best',
-            fetch_format: 'auto'
-          },
-          (error: any, result: any) => {
-            if (error) {
-              console.error("Cloudinary upload error:", error);
-              reject(error);
-            } else {
-              console.log("Cloudinary upload success:", {
-                public_id: result.public_id,
-                url: result.secure_url,
-                format: result.format,
-                bytes: result.bytes
-              });
-              resolve(result);
-            }
-          }
-        ).end(req.file.buffer);
-      });
+      const filename = req.file.originalname || `upload-${Date.now()}`;
+      const uploadUrl = await uploadToCloudinary(req.file.buffer, filename);
       
       res.json({ 
-        url: (cloudinaryResult as any).secure_url,
-        imageUrl: (cloudinaryResult as any).secure_url,
-        publicId: (cloudinaryResult as any).public_id
+        url: uploadUrl,
+        imageUrl: uploadUrl,
+        publicId: `user-uploads/${filename}`
       });
     } catch (error) {
       console.error("Error uploading file:", error);
@@ -1164,44 +1131,11 @@ async function processProjectFromJob(job: any) {
     }
     console.log("Scene preservation check - generated image size:", imageBuffer.length, "bytes");
     
-    // Upload to Cloudinary
-    const { v2: cloudinary } = await import('cloudinary');
-    cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET
-    });
+    // Upload to Cloudinary using centralized service
+    const filename = `generated-${Date.now()}.${fileExtension}`;
+    console.log("Uploading generated image to Cloudinary:", filename);
     
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const publicId = `cgi-generated/generated-${uniqueSuffix}`;
-    
-    console.log("Uploading to Cloudinary with public_id:", publicId);
-    
-    const cloudinaryResult = await new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_stream(
-        {
-          resource_type: 'image',
-          public_id: publicId,
-          folder: 'cgi-generated',
-          format: fileExtension,
-          quality: 'auto:best'
-        },
-        (error: any, result: any) => {
-          if (error) {
-            console.error("Cloudinary upload error:", error);
-            reject(error);
-          } else {
-            console.log("Cloudinary upload success:", {
-              public_id: result.public_id,
-              url: result.secure_url,
-              format: result.format,
-              bytes: result.bytes
-            });
-            resolve(result);
-          }
-        }
-      ).end(imageBuffer);
-    });
+    const cloudinaryUrl = await uploadToCloudinary(imageBuffer, filename);
     
     const imageResult = { url: (cloudinaryResult as any).secure_url };
 

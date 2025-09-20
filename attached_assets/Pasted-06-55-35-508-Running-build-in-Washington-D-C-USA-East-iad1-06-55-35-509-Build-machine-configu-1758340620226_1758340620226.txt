@@ -1,0 +1,40 @@
+06:55:35.508 Running build in Washington, D.C., USA (East) – iad1
+06:55:35.509 Build machine configuration: 2 cores, 8 GB
+06:55:35.552 Cloning github.com/newmemomedo2018-afk/cgi-generator-v2 (Branch: main, Commit: 8bb10f9)
+06:55:37.137 Cloning completed: 1.584s
+06:55:37.242 Restored build cache from previous deployment (CbXUxWF22GptW6NoY7VhdYUR68AX)
+06:55:37.752 Running "vercel build"
+06:55:39.321 Vercel CLI 48.0.2
+06:55:40.142 Installing dependencies...
+06:55:42.344 
+06:55:42.345 up to date in 1s
+06:55:42.345 
+06:55:42.345 75 packages are looking for funding
+06:55:42.346   run `npm fund` for details
+06:55:42.484 
+06:55:42.485 > rest-express@1.0.0 build
+06:55:42.485 > vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+06:55:42.485 
+06:55:42.788 [36mvite v5.4.19 [32mbuilding for production...[36m[39m
+06:55:42.843 transforming...
+06:55:43.176 Browserslist: browsers data (caniuse-lite) is 11 months old. Please run:
+06:55:43.176   npx update-browserslist-db@latest
+06:55:43.177   Why you should do it regularly: https://github.com/browserslist/update-db#readme
+06:55:47.404 [32m✓[39m 1734 modules transformed.
+06:55:47.702 rendering chunks...
+06:55:47.712 computing gzip size...
+06:55:47.729 [2m../dist/public/[22m[32mindex.html                                                    [39m[1m[2m    1.95 kB[22m[1m[22m[2m │ gzip:   0.74 kB[22m
+06:55:47.730 [2m../dist/public/[22m[2massets/[22m[32mModern_smartphone_product_photo_8515c516-CZcy4XOW.png  [39m[1m[2m  481.85 kB[22m[1m[22m
+06:55:47.730 [2m../dist/public/[22m[2massets/[22m[32mModern_living_room_scene_8d384239-CSvMf7zk.png         [39m[1m[2m1,392.27 kB[22m[1m[22m
+06:55:47.730 [2m../dist/public/[22m[2massets/[22m[32mCGI_smartphone_composite_result_bc061ac4-Y-KPBHYW.png  [39m[1m[2m1,413.66 kB[22m[1m[22m
+06:55:47.730 [2m../dist/public/[22m[2massets/[22m[35mindex-zECSGvMO.css                                     [39m[1m[2m   68.38 kB[22m[1m[22m[2m │ gzip:  12.03 kB[22m
+06:55:47.731 [2m../dist/public/[22m[2massets/[22m[36mindex-BtWoAyzX.js                                      [39m[1m[2m  406.70 kB[22m[1m[22m[2m │ gzip: 124.53 kB[22m
+06:55:47.731 [32m✓ built in 4.92s[39m
+06:55:47.796 
+06:55:47.797   dist/index.js  125.2kb
+06:55:47.797 
+06:55:47.797 ⚡ Done in 16ms
+06:56:06.594 Build Completed in /vercel/output [26s]
+06:56:07.094 Deploying outputs...
+06:56:17.577 Deployment completed
+06:56:18.397 Creating build cache...
