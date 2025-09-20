@@ -626,7 +626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If it's a local file, serve it directly
       if (outputUrl.startsWith('/api/files/')) {
         const filePath = outputUrl.replace('/api/files/', '');
-        const fullPath = path.join(process.env.PRIVATE_OBJECT_DIR || '/tmp', filePath);
+        const fullPath = path.join('/tmp', filePath);
         
         try {
           const fileBuffer = await fs.readFile(fullPath);
