@@ -1,0 +1,63 @@
+03:52:24.057 Running build in Washington, D.C., USA (East) – iad1
+03:52:24.058 Build machine configuration: 2 cores, 8 GB
+03:52:24.114 Cloning github.com/newmemomedo2018-afk/cgi-generator (Branch: main, Commit: 596b5a9)
+03:52:25.813 Cloning completed: 1.699s
+03:52:25.917 Restored build cache from previous deployment (GYDY4DA8mvnDhDGB6HvEcG84c5gW)
+03:52:26.428 Running "vercel build"
+03:52:26.809 Vercel CLI 48.0.2
+03:52:27.533 Running "install" command: `npm install`...
+03:52:29.962 
+03:52:29.964 up to date, audited 569 packages in 2s
+03:52:29.964 
+03:52:29.964 75 packages are looking for funding
+03:52:29.965   run `npm fund` for details
+03:52:30.008 
+03:52:30.008 10 vulnerabilities (3 low, 7 moderate)
+03:52:30.009 
+03:52:30.009 To address issues that do not require attention, run:
+03:52:30.009   npm audit fix
+03:52:30.009 
+03:52:30.010 To address all issues (including breaking changes), run:
+03:52:30.010   npm audit fix --force
+03:52:30.010 
+03:52:30.010 Run `npm audit` for details.
+03:52:31.284 
+03:52:31.284 up to date, audited 569 packages in 1s
+03:52:31.284 
+03:52:31.284 75 packages are looking for funding
+03:52:31.284   run `npm fund` for details
+03:52:31.321 
+03:52:31.322 10 vulnerabilities (3 low, 7 moderate)
+03:52:31.322 
+03:52:31.322 To address issues that do not require attention, run:
+03:52:31.323   npm audit fix
+03:52:31.323 
+03:52:31.323 To address all issues (including breaking changes), run:
+03:52:31.323   npm audit fix --force
+03:52:31.323 
+03:52:31.323 Run `npm audit` for details.
+03:52:31.437 
+03:52:31.437 > rest-express@1.0.0 build
+03:52:31.437 > vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+03:52:31.437 
+03:52:31.733 [36mvite v5.4.19 [32mbuilding for production...[36m[39m
+03:52:31.795 transforming...
+03:52:32.112 Browserslist: browsers data (caniuse-lite) is 11 months old. Please run:
+03:52:32.112   npx update-browserslist-db@latest
+03:52:32.112   Why you should do it regularly: https://github.com/browserslist/update-db#readme
+03:52:36.181 [32m✓[39m 1734 modules transformed.
+03:52:36.493 rendering chunks...
+03:52:36.507 computing gzip size...
+03:52:36.522 [2m../dist/public/[22m[32mindex.html                                                    [39m[1m[2m    1.95 kB[22m[1m[22m[2m │ gzip:   0.74 kB[22m
+03:52:36.523 [2m../dist/public/[22m[2massets/[22m[32mModern_smartphone_product_photo_8515c516-CZcy4XOW.png  [39m[1m[2m  481.85 kB[22m[1m[22m
+03:52:36.523 [2m../dist/public/[22m[2massets/[22m[32mModern_living_room_scene_8d384239-CSvMf7zk.png         [39m[1m[2m1,392.27 kB[22m[1m[22m
+03:52:36.523 [2m../dist/public/[22m[2massets/[22m[32mCGI_smartphone_composite_result_bc061ac4-Y-KPBHYW.png  [39m[1m[2m1,413.66 kB[22m[1m[22m
+03:52:36.524 [2m../dist/public/[22m[2massets/[22m[35mindex-zECSGvMO.css                                     [39m[1m[2m   68.38 kB[22m[1m[22m[2m │ gzip:  12.03 kB[22m
+03:52:36.526 [2m../dist/public/[22m[2massets/[22m[36mindex-BtWoAyzX.js                                      [39m[1m[2m  406.70 kB[22m[1m[22m[2m │ gzip: 124.53 kB[22m
+03:52:36.526 [32m✓ built in 4.76s[39m
+03:52:36.585 
+03:52:36.585   dist/index.js  124.9kb
+03:52:36.585 
+03:52:36.585 ⚡ Done in 16ms
+03:52:36.601 Error: No Output Directory named "dist" found after the Build completed. Update vercel.json#outputDirectory to ensure the correct output directory is generated.
+03:52:36.601 Learn More: https://vercel.link/missing-public-directory
