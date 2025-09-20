@@ -104,3 +104,7 @@ const handler = async (req: any, res: any) => {
 
 // Export for Vercel (ES Module)
 export default handler;
+
+// Also export as module.exports for CommonJS compatibility
+module.exports = handler;
+module.exports.default = handler;
